@@ -229,6 +229,7 @@ inline uint32 ldb(uint32 p, uint32 s, uint32 w)
 #include "Matrix.h"
 #include "Rect.h"
 
+ #include <glm/glm.hpp> 
 class CRGBA
 {
 public:

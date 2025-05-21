@@ -75,6 +75,7 @@ workspace "reVC"
 	location "build"
 	symbols "Full"
 	staticruntime "off"
+    flags { "MultiProcessorCompile" }
 
 	if _OPTIONS["with-asan"] then
 		buildoptions { "-fsanitize=address -g3 -fno-omit-frame-pointer" }
@@ -203,6 +204,16 @@ project "librw"
 	files { path.join(Librw, "src/*/*.*") }
 	files { path.join(Librw, "src/gl/*/*.*") }
 
+
+	includedirs { "vendor/glm/include" }
+	libdirs { "vendor/glm/include" }
+		
+	filter "platforms:win*"
+		toolset "v143"
+		
+	filter "language:C++"
+		cppdialect "C++20"
+	
 	filter { "platforms:*x86*" }
 		architecture "x86"
 
@@ -305,6 +316,9 @@ project "reVC"
 	includedirs { "src/weapons" }
 	includedirs { "src/extras" }
 
+	includedirs { "vendor/glm/include" }
+	libdirs { "vendor/glm/include" }
+
 	if(not _OPTIONS["no-git-hash"]) then
 		defines { "USE_OUR_VERSIONING" }
 	end
@@ -339,8 +353,12 @@ project "reVC"
 	if(os.getenv("GTA_VC_RE_DIR")) then
 		setpaths(os.getenv("GTA_VC_RE_DIR") .. "/", "%(cfg.buildtarget.name)")
 	end
-
+	
+	filter "language:C++"
+		cppdialect "C++20"
+		
 	filter "platforms:win*"
+		toolset "v143"
 		files { addSrcFiles("src/skel/win") }
 		includedirs { "src/skel/win" }
 		buildoptions { "/Zc:sizedDealloc-" }
