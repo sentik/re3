@@ -246,7 +246,7 @@ CBike::ProcessControl(void)
 
 			if(m_fLeanInput < 0.0f){
 				m_vecCentreOfMass.y = pHandling->CentreOfMass.y + pBikeHandling->fLeanBakCOM*m_fLeanInput;
-				CVector com = m_vecCentreOfMass;
+				CVector com = CVector(m_vecCentreOfMass.x, m_vecCentreOfMass.y, m_vecCentreOfMass.z);
 #ifdef FIX_BUGS
 				// center of mass has to have world space orientation. unfortunately we can't do wheelies
 				// at high speed then, flipping y here is like riding south without this fix where wheelies work
@@ -266,7 +266,7 @@ CBike::ProcessControl(void)
 				}
 			}else{
 				m_vecCentreOfMass.y = pHandling->CentreOfMass.y + pBikeHandling->fLeanFwdCOM*m_fLeanInput;
-				CVector com = m_vecCentreOfMass;
+				CVector com = CVector(m_vecCentreOfMass.x, m_vecCentreOfMass.y, m_vecCentreOfMass.z);
 #ifdef FIX_BUGS
 				// see above
 				com.y = -com.y;

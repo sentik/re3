@@ -1,9 +1,22 @@
 #include "common.h"
 
 #include "VuVector.h"
+#include <glm/gtc/matrix_transform.hpp> // ƒл€ glm::scale
 
 // TODO: move more stuff into here
 
+
+glm::mat4
+CreateScaleMatrix(float s)
+{
+	// —оздаЄм матрицу масштабировани€
+	glm::mat4 matrix = glm::scale(glm::mat4(1.0f), glm::vec3(s));
+
+	// ќбнул€ем позицию, если требуетс€ (опционально)
+	matrix[3] = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f); // [3] Ч четвЄртый столбец (позици€)
+
+	return matrix;
+};
 
 void TransformPoint(CVuVector &out, const CMatrix &mat, const CVuVector &in)
 {

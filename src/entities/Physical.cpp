@@ -60,7 +60,7 @@ CPhysical::CPhysical(void)
 	bUsesCollision = true;
 	m_audioEntityId = -5;
 	m_phys_unused1 = 100.0f;
-	m_vecCentreOfMass = CVector(0.0f, 0.0f, 0.0f);
+	m_vecCentreOfMass = glm::vec3(0.0f, 0.0f, 0.0f);
 	m_phys_unused2 = 0;
 
 	bIsHeavy = false;

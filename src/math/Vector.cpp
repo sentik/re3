@@ -29,6 +29,15 @@ Multiply3x3(const CMatrix &mat, const CVector &vec)
 }
 
 CVector
+Multiply3x3(const CMatrix &mat, const glm::vec3 &vec)
+{
+	// TODO: VU0 code
+	return CVector(mat.rx * vec.x + mat.fx * vec.y + mat.ux * vec.z,
+	               mat.ry * vec.x + mat.fy * vec.y + mat.uy * vec.z,
+	               mat.rz * vec.x + mat.fz * vec.y + mat.uz * vec.z);
+}
+
+CVector
 Multiply3x3(const CVector &vec, const CMatrix &mat)
 {
 	return CVector(mat.rx * vec.x + mat.ry * vec.y + mat.rz * vec.z,

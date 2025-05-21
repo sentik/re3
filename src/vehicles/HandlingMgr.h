@@ -164,7 +164,7 @@ struct tHandlingData
 	float fInvMass;
 	float fTurnMass;
 	CVector Dimension;
-	CVector CentreOfMass;
+	glm::vec3 CentreOfMass;
 	int8 nPercentSubmerged;
 	float fBuoyancy;
 	float fTractionMultiplier;

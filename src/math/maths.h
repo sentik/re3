@@ -1,4 +1,5 @@
 #pragma once
+#include <glm/glm.hpp>
 
 // wrapper around float versions of functions
 // in gta they are in CMaths but that makes the code rather noisy
@@ -17,3 +18,7 @@ inline float RecipSqrt(float x) { return RecipSqrt(1.0f, x); }
 inline float Pow(float x, float y) { return powf(x, y); }
 inline float Floor(float x) { return floorf(x); }
 inline float Ceil(float x) { return ceilf(x); }
+
+
+glm::mat4
+CreateScaleMatrix(float s);

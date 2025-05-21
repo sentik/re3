@@ -124,6 +124,8 @@ Distance2D(const CVector &v1, const CVector &v2)
 
 class CMatrix;
 
+CVector
+Multiply3x3(const CMatrix &mat, const glm::vec3 &vec);
 CVector Multiply3x3(const CMatrix &mat, const CVector &vec);
 CVector Multiply3x3(const CVector &vec, const CMatrix &mat);
 CVector operator*(const CMatrix &mat, const CVector &vec);

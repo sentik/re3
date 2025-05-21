@@ -30,7 +30,7 @@ public:
 	float m_fAirResistance;
 	float m_fElasticity;
 	float m_fBuoyancy;
-	CVector m_vecCentreOfMass;
+	glm::vec3 m_vecCentreOfMass;
 	CEntryInfoList m_entryInfoList;
 	CPtrNode *m_movingListNode;
 
@@ -134,7 +134,7 @@ public:
 		m_vecTurnSpeed.y = y;
 		m_vecTurnSpeed.z = z;
 	}
-	const CVector &GetCenterOfMass() { return m_vecCentreOfMass; }
+	const glm::vec3 &GetCenterOfMass() { return m_vecCentreOfMass; }
 	void SetCenterOfMass(float x, float y, float z) {
 		m_vecCentreOfMass.x = x;
 		m_vecCentreOfMass.y = y;
