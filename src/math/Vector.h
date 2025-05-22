@@ -1,4 +1,5 @@
 #pragma once
+#include <glm/vec3.hpp>
 
 class CVector : public RwV3d
 {
@@ -106,6 +107,24 @@ DotProduct(const CVector &v1, const CVector &v2)
 	return v1.x*v2.x + v1.y*v2.y + v1.z*v2.z;
 }
 
+inline float
+DotProduct(const glm::vec3 &v1, const CVector &v2)
+{
+	return v1.x*v2.x + v1.y*v2.y + v1.z*v2.z;
+}
+
+inline float
+DotProduct(const CVector &v1, const glm::vec3 &v2)
+{
+	return v1.x*v2.x + v1.y*v2.y + v1.z*v2.z;
+}
+
+inline float
+DotProduct(const glm::vec3 &v1, const glm::vec3 &v2)
+{
+	return v1.x*v2.x + v1.y*v2.y + v1.z*v2.z;
+}
+
 CVector CrossProduct(const CVector &v1, const CVector &v2);
 
 inline float
@@ -128,4 +147,26 @@ CVector
 Multiply3x3(const CMatrix &mat, const glm::vec3 &vec);
 CVector Multiply3x3(const CMatrix &mat, const CVector &vec);
 CVector Multiply3x3(const CVector &vec, const CMatrix &mat);
+
+glm::vec3
+Multiply3x3(const glm::vec3 &vec, const CMatrix &mat);
 CVector operator*(const CMatrix &mat, const CVector &vec);
+
+
+static glm::vec3
+toVec3(const CVector &vector)
+{
+	return glm::vec3(vector.x, vector.y, vector.z);
+}
+
+static CVector
+toVec(const glm::vec3 &vector)
+{
+	return CVector(vector.x, vector.y, vector.z);
+}
+
+static float
+Heading(const glm::vec3 &vector)
+{
+	return Atan2(-vector.x, vector.y);
+}

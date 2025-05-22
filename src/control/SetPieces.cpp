@@ -123,7 +123,7 @@ void CSetPiece::Update(void)
 			return;
 		if (!FindPlayerVehicle())
 			return;
-		if (DotProduct2D(FindPlayerSpeed(), (CVector2D)FindPlayerCoors() - m_vSpawn1) >= 0.0f)
+		if(DotProduct2D(toVec(FindPlayerSpeed()), (CVector2D)FindPlayerCoors() - m_vSpawn1) >= 0.0f)
 			return;
 		CVehicle* pVehicle1 = TryToGenerateCopCar(m_vSpawn1, m_vTarget1);
 		if (!pVehicle1)
@@ -146,7 +146,7 @@ void CSetPiece::Update(void)
 			return;
 		if (!FindPlayerVehicle())
 			return;
-		if (DotProduct2D(FindPlayerSpeed(), (CVector2D)FindPlayerCoors() - m_vSpawn1) >= 0.0f)
+		if(DotProduct2D(toVec(FindPlayerSpeed()), (CVector2D)FindPlayerCoors() - m_vSpawn1) >= 0.0f)
 			return;
 		CVehicle* pVehicle1 = TryToGenerateCopCar(m_vSpawn1, m_vTarget1);
 		if (!pVehicle1)
@@ -207,7 +207,7 @@ void CSetPiece::Update(void)
 			return;
 		if (!FindPlayerVehicle())
 			return;
-		if (DotProduct2D(FindPlayerSpeed(), (CVector2D)FindPlayerCoors() - m_vSpawn1) >= 0.0f)
+		if(DotProduct2D(toVec(FindPlayerSpeed()), (CVector2D)FindPlayerCoors() - m_vSpawn1) >= 0.0f)
 			return;
 		CVehicle* pVehicle1 = TryToGenerateCopCar(m_vSpawn1, m_vTarget1);
 		if (!pVehicle1)
@@ -245,7 +245,7 @@ void CSetPiece::Update(void)
 			return;
 		if (!FindPlayerVehicle())
 			return;
-		if (DotProduct2D(FindPlayerSpeed(), (CVector2D)FindPlayerCoors() - m_vSpawn1) >= 0.0f)
+		if (DotProduct2D(toVec(FindPlayerSpeed()), (CVector2D)FindPlayerCoors() - m_vSpawn1) >= 0.0f)
 			return;
 		CVehicle* pVehicle1 = TryToGenerateCopCar(m_vSpawn1, m_vTarget1);
 		if (!pVehicle1)

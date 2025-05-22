@@ -402,14 +402,14 @@ CCam::ProcessSpecialHeightRoutines(void)
 	int i;
 	bool StandingOnBoat = false;
 	static bool PreviouslyFailedRoadHeightCheck = false;
-	CVector CamToTarget, CamToPed;
+	glm::vec3 CamToTarget, CamToPed;
 	float DistOnGround, BetaAngle;
 	CPed *Player;
 	float PedZDist;
 	CColPoint colPoint;
 
-	CamToTarget = TheCamera.pTargetEntity->GetPosition() - TheCamera.GetGameCamPosition();
-	DistOnGround = CamToTarget.Magnitude2D();
+	CamToTarget = toVec3(TheCamera.pTargetEntity->GetPosition() - TheCamera.GetGameCamPosition());
+	DistOnGround = glm::length(glm::vec2(CamToTarget));
 	BetaAngle = CGeneral::GetATanOfXY(CamToTarget.x, CamToTarget.y);
 	m_bTheHeightFixerVehicleIsATrain = false;
 	// CGeneral::GetATanOfXY(TheCamera.GetForward().x, TheCamera.GetForward().y);
@@ -431,9 +431,9 @@ CCam::ProcessSpecialHeightRoutines(void)
 			for(i = 0; i < Player->m_numNearPeds; i++){
 				CPed *nearPed = Player->m_nearPeds[i];
 				if(nearPed && nearPed->GetPedState() != PED_DEAD){
-					CamToPed = nearPed->GetPosition() - TheCamera.GetGameCamPosition();
+					CamToPed = toVec3(nearPed->GetPosition() - TheCamera.GetGameCamPosition());
 					if(Abs(CamToPed.z) < 1.0f){
-						float DistSq = CamToPed.MagnitudeSqr();
+						float DistSq = glm::dot(CamToPed, CamToPed);
 						if(DistSq < SQR(2.1f)){
 							if(nearPed->GetPosition().z > FoundPedZ)
 								FoundPedZ = nearPed->GetPosition().z;
@@ -441,8 +441,8 @@ CCam::ProcessSpecialHeightRoutines(void)
 							float Dist = Sqrt(DistSq);
 							CamToPed /= Dist;
 							// strange calculation
-							CVector PlayerCamSpeed = DotProduct(Front, Player->m_vecMoveSpeed)*Front;
-							float SpeedDiff = DotProduct(PlayerCamSpeed - nearPed->m_vecMoveSpeed, CamToPed);
+							glm::vec3 PlayerCamSpeed = glm::dot(toVec3(Front), Player->m_vecMoveSpeed) * toVec3(Front);
+							float SpeedDiff = glm::dot(PlayerCamSpeed - nearPed->m_vecMoveSpeed, CamToPed);
 							if(SpeedDiff > 0.01f &&
 							   (m_fPedBetweenCameraHeightOffset > 0.0f && (Dist-2.1f)/SpeedDiff < 75.0f ||
 							    m_fPedBetweenCameraHeightOffset <= 0.0f && (Dist-2.1f)/SpeedDiff < 75.0f * 0.1f))
@@ -615,7 +615,7 @@ CCam::LookBehind(void)
 			if(((CVehicle*)CamTargetEntity)->pDriver){
 				CVector ExtraFwd(0.0f, 0.0f, 0.0f);
 				((CVehicle*)CamTargetEntity)->pDriver->m_pedIK.GetComponentPosition(ExtraFwd, PED_HEAD);
-				ExtraFwd += ((CVehicle*)CamTargetEntity)->m_vecMoveSpeed*CTimer::GetTimeStep() - CamTargetEntity->GetPosition();
+				ExtraFwd += toVec(((CVehicle*)CamTargetEntity)->m_vecMoveSpeed*CTimer::GetTimeStep()) - CamTargetEntity->GetPosition();
 				FrontDist += 0.2f + Max(DotProduct(ExtraFwd, CamTargetEntity->GetForward()), 0.0f);
 			}
 			Source += FrontDist*Front;
@@ -1821,7 +1821,7 @@ CCam::Process_Cam_On_A_String(const CVector &CameraTarget, float TargetOrientati
 	Beta = CGeneral::LimitRadianAngle(Beta);
 
 	if(CamTargetEntity->GetModelIndex() == MI_FIRETRUCK && CPad::GetPad(0)->GetCarGunFired() &&
-	   ((CVehicle*)CamTargetEntity)->m_vecMoveSpeed.Magnitude2D() < 0.01f){
+	   (glm::length(glm::vec2(((CVehicle*)CamTargetEntity)->m_vecMoveSpeed))) < 0.01f){
 		float TargetBeta = CamTargetEntity->GetForward().Heading() - ((CAutomobile*)CamTargetEntity)->m_fCarGunLR + HALFPI;
 		TargetBeta = CGeneral::LimitRadianAngle(TargetBeta);
 		float DeltaBeta = TargetBeta - Beta;
@@ -2652,7 +2652,7 @@ CCam::Process_1stPerson(const CVector &CameraTarget, float TargetOrientation, fl
 		else if(((CVehicle*)CamTargetEntity)->IsBike() && ((CVehicle*)CamTargetEntity)->pDriver){
 			CVector Neck(0.0f, 0.0f, 0.0f);
 			((CVehicle*)CamTargetEntity)->pDriver->m_pedIK.GetComponentPosition(Neck, PED_NECK);
-			Neck += ((CVehicle*)CamTargetEntity)->m_vecMoveSpeed * CTimer::GetTimeStep();
+			Neck += toVec(((CVehicle*)CamTargetEntity)->m_vecMoveSpeed * CTimer::GetTimeStep());
 			Source.z = Neck.z + fBike1stPersonOffsetZ;
 		}
 
@@ -2663,11 +2663,8 @@ CCam::Process_1stPerson(const CVector &CameraTarget, float TargetOrientation, fl
 				DontLookThroughWorldFixer = 0.5f;
 		}else{
 			if(DontLookThroughWorldFixer < 0.0f)
-#ifdef FIX_BUGS
 				DontLookThroughWorldFixer += 0.03f;
-#else
-				DontLookThroughWorldFixer -= 0.03f;
-#endif
+
 			else
 				DontLookThroughWorldFixer = 0.0f;
 		}
@@ -3285,7 +3282,7 @@ CCam::Process_BehindBoat(const CVector &CameraTarget, float TargetOrientation, f
 		DeltaBeta = 0.0f;
 	}
 	// inlined
-	WellBufferMe(TargetOrientation, &Beta, &BetaSpeed, BetaDiffMult * ((CVehicle*)CamTargetEntity)->m_vecMoveSpeed.Magnitude(), BetaSpeedDiffMult, true);
+	WellBufferMe(TargetOrientation, &Beta, &BetaSpeed, BetaDiffMult * glm::length(((CVehicle*)CamTargetEntity)->m_vecMoveSpeed), BetaSpeedDiffMult, true);
 
 	Source = (TheCamera.CarZoomValueSmooth+BoatSize) * CVector(-Cos(Beta), -Sin(Beta), 0.0f) + TargetCoors;
 	Source.z = WaterLevelBuffered + WATER_Z_ADDITION + (BoatDimensions.z/2.0f + MaxHeightUp) * Sin(Alpha);
@@ -3654,7 +3651,7 @@ CCam::Process_WheelCam(const CVector&, float, float, float)
 		CVector BoatCamPos(0.0f, 0.0f, 0.0f);
 		if(((CVehicle*)CamTargetEntity)->pDriver){
 			((CVehicle*)CamTargetEntity)->pDriver->m_pedIK.GetComponentPosition(BoatCamPos, PED_HEAD);
-			BoatCamPos += ((CVehicle*)CamTargetEntity)->m_vecMoveSpeed * CTimer::GetTimeStep();
+			BoatCamPos += toVec(((CVehicle*)CamTargetEntity)->m_vecMoveSpeed * CTimer::GetTimeStep());
 			BoatCamPos += vecWheelCamBoatOffset.x * Right;
 			BoatCamPos += vecWheelCamBoatOffset.y * CamTargetEntity->GetForward();
 			BoatCamPos.z += vecWheelCamBoatOffset.z;
@@ -4974,10 +4971,10 @@ CCam::Process_FollowCar_SA(const CVector& CameraTarget, float TargetOrientation,
 		camRightHeading = camRightHeading + TWOPI;
 
 	float velocityRightHeading;
-	if (car->m_vecMoveSpeed.Magnitude2D() <= 0.02f)
+	if (glm::length(glm::vec2(car->m_vecMoveSpeed)) <= 0.02f)
 		velocityRightHeading = camRightHeading;
 	else
-		velocityRightHeading = car->m_vecMoveSpeed.Heading() - HALFPI;
+		velocityRightHeading = Heading(car->m_vecMoveSpeed) - HALFPI;
 
 	if (velocityRightHeading < camRightHeading - PI)
 		velocityRightHeading = velocityRightHeading + TWOPI;
@@ -4987,7 +4984,7 @@ CCam::Process_FollowCar_SA(const CVector& CameraTarget, float TargetOrientation,
 	float betaChangeMult1 = CTimer::GetTimeStep() * CARCAM_SET[camSetArrPos][10];
 	float betaChangeLimit = CTimer::GetTimeStep() * CARCAM_SET[camSetArrPos][11];
 
-	float betaChangeMult2 = (car->m_vecMoveSpeed - DotProduct(car->m_vecMoveSpeed, Front) * Front).Magnitude();
+	float betaChangeMult2 = glm::length((car->m_vecMoveSpeed - glm::dot(car->m_vecMoveSpeed, toVec3(Front)) * toVec3(Front)));
 
 	float betaChange = Min(1.0f, betaChangeMult1 * betaChangeMult2) * (velocityRightHeading - camRightHeading);
 	if (betaChange <= betaChangeLimit) {
@@ -5012,7 +5009,7 @@ CCam::Process_FollowCar_SA(const CVector& CameraTarget, float TargetOrientation,
 	// Originally this is to prevent camera enter into car while we're stopping, but what about moving???
 	// This is also original LCS and SA bug, or some attempt to fix lag. We'll never know
 
-	// if (car->m_vecMoveSpeed.MagnitudeSqr() < sq(0.2f))
+	// if (car->glm::dot(m_vecMoveSpeed, m_vecMoveSpeed) < sq(0.2f))
 		if (car->GetModelIndex() != MI_FIRETRUCK)
 			if (!isBike || ((CBike*)car)->m_nWheelsOnGround > 3)
 				if (!isHeli && (!isPlane || ((CAutomobile*)car)->m_nWheelsOnGround)) {
@@ -5259,7 +5256,7 @@ CCam::Process_FollowCar_SA(const CVector& CameraTarget, float TargetOrientation,
 
 		// This is only in LCS!
 		float timestepFactor = Pow(0.99f, CTimer::GetTimeStep());
-		dontCollideWithCars = (timestepFactor * dontCollideWithCars) + ((1.0f - timestepFactor) * car->m_vecMoveSpeed.Magnitude());
+		dontCollideWithCars = (timestepFactor * dontCollideWithCars) + ((1.0f - timestepFactor) * glm::length(car->m_vecMoveSpeed));
 
 		// Our addition
 #define IS_TRAFFIC_LIGHT(ent) (ent->IsObject() && IsLightObject(ent->GetModelIndex()))

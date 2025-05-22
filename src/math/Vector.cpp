@@ -45,6 +45,14 @@ Multiply3x3(const CVector &vec, const CMatrix &mat)
 	               mat.ux * vec.x + mat.uy * vec.y + mat.uz * vec.z);
 }
 
+glm::vec3
+Multiply3x3(const glm::vec3 &vec, const CMatrix &mat)
+{
+	return glm::vec3(mat.rx * vec.x + mat.ry * vec.y + mat.rz * vec.z,
+	               mat.fx * vec.x + mat.fy * vec.y + mat.fz * vec.z,
+	               mat.ux * vec.x + mat.uy * vec.y + mat.uz * vec.z);
+}
+
 CVector
 operator*(const CMatrix &mat, const CVector &vec)
 {
@@ -53,3 +61,6 @@ operator*(const CMatrix &mat, const CVector &vec)
 	               mat.ry * vec.x + mat.fy * vec.y + mat.uy * vec.z + mat.py,
 	               mat.rz * vec.x + mat.fz * vec.y + mat.uz * vec.z + mat.pz);
 }
+
+
+

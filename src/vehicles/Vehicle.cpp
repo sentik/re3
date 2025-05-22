@@ -279,11 +279,11 @@ CVehicle::FlyingControl(eFlightModel flightModel)
 		// This seems pretty magic
 
 		// Move Left/Right
-		float moveSpeed = m_vecMoveSpeed.Magnitude();
+		float moveSpeed = glm::length(m_vecMoveSpeed);
 		float sideSpeed = DotProduct(m_vecMoveSpeed, GetRight());
 		float sideImpulse = -1.0f * sideSpeed / moveSpeed;
 		float fwdSpeed = DotProduct(m_vecMoveSpeed, GetForward());
-		float magic = m_vecMoveSpeed.MagnitudeSqr() * sq(fwdSpeed);
+		float magic = glm::dot(m_vecMoveSpeed, m_vecMoveSpeed) * sq(fwdSpeed);
 		float turnImpulse = (sideImpulse*0.003f + m_fSteerAngle*0.001f) *
 			magic*m_fTurnMass*CTimer::GetTimeStep();
 		ApplyTurnForce(turnImpulse*GetRight(), -4.0f*GetForward());
@@ -295,7 +295,7 @@ CVehicle::FlyingControl(eFlightModel flightModel)
 
 
 		// Move Up/Down
-		moveSpeed = m_vecMoveSpeed.Magnitude();
+		moveSpeed = glm::length(m_vecMoveSpeed);
 		float upSpeed = DotProduct(m_vecMoveSpeed, GetUp());
 		float upImpulse = -1.0f * upSpeed / moveSpeed;
 		turnImpulse = (upImpulse*0.002f + -CPad::GetPad(0)->GetSteeringUpDown()/128.0f*0.001f) *
@@ -315,11 +315,11 @@ CVehicle::FlyingControl(eFlightModel flightModel)
 		m_vecTurnSpeed.y *= Pow(0.9f, CTimer::GetTimeStep());
 
 
-		moveSpeed = m_vecMoveSpeed.MagnitudeSqr();
+		moveSpeed = glm::dot(m_vecMoveSpeed, m_vecMoveSpeed);
 		if(moveSpeed > SQR(1.5f))
 			m_vecMoveSpeed *= 1.5f/Sqrt(moveSpeed);
 
-		float turnSpeed = m_vecTurnSpeed.MagnitudeSqr();
+		float turnSpeed = glm::dot(m_vecTurnSpeed, m_vecTurnSpeed);
 		if(turnSpeed > SQR(0.2f))
 			m_vecTurnSpeed *= 0.2f/Sqrt(turnSpeed);
 		break;
@@ -433,19 +433,19 @@ CVehicle::FlyingControl(eFlightModel flightModel)
 		float rX = Pow(vecResistance.x, CTimer::GetTimeStep());
 		float rY = Pow(vecResistance.y, CTimer::GetTimeStep());
 		float rZ = Pow(vecResistance.z, CTimer::GetTimeStep());
-		CVector vecTurnSpeed = Multiply3x3(m_vecTurnSpeed, GetMatrix());
+		glm::vec3 vecTurnSpeed = Multiply3x3(m_vecTurnSpeed, GetMatrix());
 		vecTurnSpeed.x *= rX;
 		float fResistance = vecTurnSpeed.y * (1.0f / (pFlyingHandling->vecSpeedRes.y * SQR(vecTurnSpeed.y) + 1.0f)) * rY - vecTurnSpeed.y;
 		vecTurnSpeed.z *= rZ;
-		m_vecTurnSpeed = Multiply3x3(GetMatrix(), vecTurnSpeed);
+		m_vecTurnSpeed = toVec3(Multiply3x3(GetMatrix(), vecTurnSpeed));
 		ApplyTurnForce(-GetUp() * fResistance * m_fTurnMass, GetRight() + Multiply3x3(GetMatrix(), m_vecCentreOfMass));
 
 
-		float fMoveSpeed = m_vecMoveSpeed.MagnitudeSqr();
+		float fMoveSpeed = glm::dot(m_vecMoveSpeed, m_vecMoveSpeed);
 		if(fMoveSpeed > SQR(1.5f))
 			m_vecMoveSpeed *= 1.5f/Sqrt(fMoveSpeed);
 
-		float fTurnSpeed = m_vecTurnSpeed.MagnitudeSqr();
+		float fTurnSpeed = glm::dot(m_vecTurnSpeed, m_vecTurnSpeed);
 		if(fTurnSpeed > SQR(0.2f))
 			m_vecTurnSpeed *= 0.2f/Sqrt(fTurnSpeed);
 		break;
@@ -539,13 +539,13 @@ CVehicle::FlyingControl(eFlightModel flightModel)
 		float rX = Pow(flyingHandling->vecTurnRes.x, CTimer::GetTimeStep());
 		float rY = Pow(flyingHandling->vecTurnRes.y, CTimer::GetTimeStep());
 		float rZ = Pow(flyingHandling->vecTurnRes.z, CTimer::GetTimeStep());
-		CVector vecTurnSpeed = Multiply3x3(m_vecTurnSpeed, GetMatrix());
+		glm::vec3 vecTurnSpeed = Multiply3x3(m_vecTurnSpeed, GetMatrix());
 		float fResistanceMultiplier = Pow(1.0f / (flyingHandling->vecSpeedRes.z * SQR(vecTurnSpeed.z) + 1.0f) * rZ, CTimer::GetTimeStep());
 		float fResistance = vecTurnSpeed.z * fResistanceMultiplier - vecTurnSpeed.z;
 		vecTurnSpeed.x *= rX;
 		vecTurnSpeed.y *= rY;
 		vecTurnSpeed.z *= fResistanceMultiplier;
-		m_vecTurnSpeed = Multiply3x3(GetMatrix(), vecTurnSpeed);
+		m_vecTurnSpeed = toVec3(Multiply3x3(GetMatrix(), vecTurnSpeed));
 		ApplyTurnForce(-GetRight() * fResistance * m_fTurnMass, GetForward() + Multiply3x3(GetMatrix(), m_vecCentreOfMass));
 		break;
 	}
@@ -742,7 +742,7 @@ CVehicle::BladeColSectorList(CPtrList &list, CColModel &rotorColModel, CMatrix &
 
 				// Particles
 				for(int j = 0; j < 4; j++){
-					CParticle::AddParticle(PARTICLE_SPARK_SMALL, colpos, (tangentSpeed+m_vecMoveSpeed)/2.0f);
+					CParticle::AddParticle(PARTICLE_SPARK_SMALL, colpos, (tangentSpeed+toVec(m_vecMoveSpeed))/2.0f);
 					CParticle::AddParticle(PARTICLE_SPARK, colpos, 0.1f*CWorld::m_aTempColPts[i].normal);
 				}
 
@@ -1711,9 +1711,9 @@ CVehicle::CanPedEnterCar(void)
 	// can't enter when car is on side
 	if(IsBike() || GetUp().z > 0.1f ||  GetUp().z < -0.1f){
 		// also when car is moving too fast
-		if(m_vecMoveSpeed.MagnitudeSqr() > sq(0.2f))
+		if(glm::dot(m_vecMoveSpeed, m_vecMoveSpeed) > sq(0.2f))
 			return false;
-		if(m_vecTurnSpeed.MagnitudeSqr() > sq(0.2f))
+		if(glm::dot(m_vecTurnSpeed, m_vecTurnSpeed) > sq(0.2f))
 			return false;
 		return true;
 	}
@@ -1728,7 +1728,7 @@ CVehicle::CanPedExitCar(bool jumpExit)
 		if (IsBoat())
 			return true;
 		// can't exit when car is moving too fast
-		if(m_vecMoveSpeed.MagnitudeSqr() > 0.005f && !jumpExit)
+		if(glm::dot(m_vecMoveSpeed, m_vecMoveSpeed) > 0.005f && !jumpExit)
 			return false;
 		// if car is slow enough, check turn speed
 		if(Abs(m_vecTurnSpeed.x) > 0.01f ||
@@ -1740,7 +1740,7 @@ CVehicle::CanPedExitCar(bool jumpExit)
 		// What is this? just > replaced by >= ??
 
 		// can't exit when car is moving too fast
-		if(m_vecMoveSpeed.MagnitudeSqr() >= 0.005f)
+		if(glm::dot(m_vecMoveSpeed, m_vecMoveSpeed) >= 0.005f)
 			return false;
 		// if car is slow enough, check turn speed
 		if(Abs(m_vecTurnSpeed.x) >= 0.01f ||
@@ -1756,7 +1756,7 @@ CVehicle::CanPedJumpOutCar(void)
 {
 	if(GetUp().z < 0.3f)
 		return false;
-	float speed = m_vecMoveSpeed.MagnitudeSqr();
+	float speed = glm::dot(m_vecMoveSpeed, m_vecMoveSpeed);
 	return speed < 0.1f || speed > 0.5f ? false : true;
 }
 
@@ -1765,7 +1765,7 @@ CVehicle::CanPedJumpOffBike(void)
 {
 	if(pPassengers[0])
 		return false;
-	return m_vecMoveSpeed.MagnitudeSqr() < 0.07f ? false : true;
+	return glm::dot(m_vecMoveSpeed, m_vecMoveSpeed) < 0.07f ? false : true;
 }
 
 void

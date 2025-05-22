@@ -118,7 +118,8 @@ CVehicle *FindPlayerVehicle(void);
 CVehicle *FindPlayerTrain(void);
 CEntity *FindPlayerEntity(void);
 CVector FindPlayerCoors(void);
-const CVector &FindPlayerSpeed(void);
+const glm::vec3 &
+FindPlayerSpeed(void);
 const CVector &FindPlayerCentreOfWorld(int32 player);
 const CVector &FindPlayerCentreOfWorld_NoSniperShift(void);
 float FindPlayerHeading(void);

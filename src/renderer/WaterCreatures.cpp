@@ -118,8 +118,8 @@ CObject *CWaterCreatures::CreateSeaLifeForm(CVector const& pos, int16 modelID, i
 	
 	pObj->SetPosition(pos);
 	pObj->GetMatrix().UpdateRW();
-	pObj->m_vecMoveSpeed = CVector(0.0f, 0.0f, 0.0f);
-	pObj->m_vecTurnSpeed = CVector(0.0f, 0.0f, 0.0f);
+	pObj->m_vecMoveSpeed = glm::vec3(0.0f, 0.0f, 0.0f);
+	pObj->m_vecTurnSpeed = glm::vec3(0.0f, 0.0f, 0.0f);
 	pObj->GetMatrix().SetRotateZOnly(DEGTORAD(zRotAngle));
 	pObj->GetMatrix().UpdateRW();
 	pObj->ObjectCreatedBy = CONTROLLED_SUB_OBJECT;
@@ -202,10 +202,10 @@ void CWaterCreatures::UpdateAll() {
 				if (aWaterCreatures[i].m_alpha < 255)
 					aWaterCreatures[i].m_alpha = Min(aWaterCreatures[i].m_alpha + 4, 255);
 				aWaterCreatures[i].m_pObj->SetRwObjectAlpha(aWaterCreatures[i].m_alpha);
-				CVector fwd = aWaterCreatures[i].m_pObj->GetRight();	// for some reason they used x for forward
-				fwd.Normalise();
+				glm::vec3 fwd = toVec3(aWaterCreatures[i].m_pObj->GetRight());	// for some reason they used x for forward
+				fwd = glm::normalize(fwd);
 				aWaterCreatures[i].m_pObj->m_vecMoveSpeed = fwd * aWaterCreatures[i].m_fFwdSpeed;
-				aWaterCreatures[i].m_pObj->m_vecTurnSpeed = CVector(0.0f, 0.0f, aWaterCreatures[i].m_fZTurnSpeed);
+				aWaterCreatures[i].m_pObj->m_vecTurnSpeed = glm::vec3(0.0f, 0.0f, aWaterCreatures[i].m_fZTurnSpeed);
 				aWaterCreatures[i].m_pObj->bIsStatic = false;
 				float fDepth = 0.0;
 				CWaterLevel::GetWaterDepth(aWaterCreatures[i].m_pObj->GetPosition(), &fDepth, nil, nil);
@@ -233,8 +233,8 @@ void CWaterCreatures::UpdateAll() {
 			else {
 				aWaterCreatures[i].m_alpha = Max(aWaterCreatures[i].m_alpha - 6, 0);
 				aWaterCreatures[i].m_pObj->SetRwObjectAlpha(aWaterCreatures[i].m_alpha);
-				CVector speed = aWaterCreatures[i].m_pObj->GetRight();
-				speed.Normalise();
+				glm::vec3 speed = toVec3(aWaterCreatures[i].m_pObj->GetRight());
+				speed = glm::normalize(speed);
 				speed.x *= aWaterCreatures[i].m_fFwdSpeed;
 				speed.y *= aWaterCreatures[i].m_fFwdSpeed;
 				speed.z = -0.015f;

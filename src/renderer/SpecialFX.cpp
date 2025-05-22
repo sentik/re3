@@ -456,7 +456,7 @@ void CBulletTraces::AddTrace(CVector* start, CVector* end, int32 weaponType, cla
 			|| camMode == CCam::MODE_HELICANNON_1STPERSON) {
 
 			player = FindPlayerVehicle() ? (CPhysical*)FindPlayerVehicle() : (CPhysical*)FindPlayerPed();
-			speed = player->m_vecMoveSpeed.Magnitude();
+			speed = glm::length(player->m_vecMoveSpeed);
 			if (speed < 0.05f)
 				return;
 		}

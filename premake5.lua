@@ -49,6 +49,9 @@ if(_OPTIONS["with-librw"]) then
 else
 	Librw = os.getenv("LIBRW") or "vendor/librw"
 end
+	
+LibGLM = "vendor/glm"
+
 
 function getsys(a)
 	if a == 'windows' then
@@ -205,9 +208,6 @@ project "librw"
 	files { path.join(Librw, "src/gl/*/*.*") }
 
 
-	includedirs { "vendor/glm/include" }
-	libdirs { "vendor/glm/include" }
-		
 	filter "platforms:win*"
 		toolset "v143"
 		
@@ -254,6 +254,50 @@ local function addSrcFiles( prefix )
 	return prefix .. "/*cpp", prefix .. "/*.h", prefix .. "/*.c", prefix .. "/*.ico", prefix .. "/*.rc"
 end
 
+
+project "glm"
+	kind "StaticLib"
+	targetname "glm"
+	targetdir "bin/%{cfg.platform}/%{cfg.buildcfg}"
+	files { addSrcFiles("vendor/glm/include") }
+	files { addSrcFiles("vendor/glm/include/glm") }
+	files { addSrcFiles("vendor/glm/include/glm/detail") }
+	files { addSrcFiles("vendor/glm/include/glm/ext") }
+	files { addSrcFiles("vendor/glm/include/glm/gtc") }
+	files { addSrcFiles("vendor/glm/include/glm/gtx") }
+	files { addSrcFiles("vendor/glm/include/glm/simd") }
+	includedirs { "vendor/glm/include" }
+	libdirs { "vendor/glm/include" }
+	staticruntime "on"
+
+	defines { "GLM_ENABLE_CXX_20" }
+	defines { "GLM_ENABLE_LANG_EXTENSIONS" }
+	defines { "GLM_ENABLE_FAST_MATH" }
+	defines { "GLM_ENABLE_SIMD_SSE2" }
+	defines { "GLM_ENABLE_SIMD_SSE3" }
+	defines { "GLM_ENABLE_SIMD_SSSE3" }
+	defines { "GLM_ENABLE_SIMD_SSE4_1" }
+	defines { "GLM_ENABLE_SIMD_SSE4_2" }
+	defines { "GLM_ENABLE_SIMD_AVX" }
+	defines { "GLM_ENABLE_SIMD_AVX2" }
+
+	filter "platforms:win*"
+		toolset "v143"
+		
+	filter "language:C++"
+		cppdialect "C++20"
+	
+	filter { "platforms:*x86*" }
+		architecture "x86"
+
+	filter { "platforms:*amd64*" }
+		architecture "amd64"
+
+	filter "platforms:win*"
+		defines { "_CRT_SECURE_NO_WARNINGS", "_CRT_NONSTDC_NO_DEPRECATE" }
+		buildoptions { "/Zc:sizedDealloc-" }
+
+
 project "reVC"
 	kind "WindowedApp"
 	targetname "reVC"
@@ -262,6 +306,7 @@ project "reVC"
 	if(_OPTIONS["with-librw"]) then
 		dependson "librw"
 	end
+	dependson "glm"
 
 	files { addSrcFiles("src") }
 	files { addSrcFiles("src/animation") }
@@ -292,6 +337,17 @@ project "reVC"
 		removefiles { "src/extras/GitSHA1.cpp" } -- but it will be everytime after
 	end
 
+	defines { "GLM_ENABLE_CXX_20" }
+	defines { "GLM_ENABLE_LANG_EXTENSIONS" }
+	defines { "GLM_ENABLE_FAST_MATH" }
+	defines { "GLM_ENABLE_SIMD_SSE2" }
+	defines { "GLM_ENABLE_SIMD_SSE3" }
+	defines { "GLM_ENABLE_SIMD_SSSE3" }
+	defines { "GLM_ENABLE_SIMD_SSE4_1" }
+	defines { "GLM_ENABLE_SIMD_SSE4_2" }
+	defines { "GLM_ENABLE_SIMD_AVX" }
+	defines { "GLM_ENABLE_SIMD_AVX2" }
+
 	includedirs { "src" }
 	includedirs { "src/animation" }
 	includedirs { "src/audio" }
@@ -315,9 +371,8 @@ project "reVC"
 	includedirs { "src/vehicles" }
 	includedirs { "src/weapons" }
 	includedirs { "src/extras" }
-
+	
 	includedirs { "vendor/glm/include" }
-	libdirs { "vendor/glm/include" }
 
 	if(not _OPTIONS["no-git-hash"]) then
 		defines { "USE_OUR_VERSIONING" }
@@ -436,6 +491,8 @@ project "reVC"
 		links { "opus" }
 		links { "opusfile" }
 	end
+	
+	links { "glm" }
 
 	filter "platforms:*RW34*"
 		includedirs { "sdk/rwsdk/include/d3d8" }

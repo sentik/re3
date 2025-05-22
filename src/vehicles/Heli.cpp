@@ -131,8 +131,8 @@ CHeli::ProcessControl(void)
 	CWindModifiers::RegisterOne(GetPosition(), 1);
 
 	// Find target
-	CVector target(0.0f, 0.0f, 0.0f);
-	CVector2D vTargetDist;
+	glm::vec3 target(0.0f, 0.0f, 0.0f);
+	glm::vec2 vTargetDist;
 	if(m_heliType == HELI_TYPE_CATALINA && m_heliStatus != HELI_STATUS_SHOT_DOWN){
 		switch(m_pathState){
 		case 0:
@@ -144,7 +144,7 @@ CHeli::ProcessControl(void)
 			target.x = CatalinaTargetX[m_pathState];
 			target.y = CatalinaTargetY[m_pathState];
 			target.z = CatalinaTargetZ[m_pathState];
-			if((target - GetPosition()).Magnitude() < 9.0f)
+			if(glm::length(target - toVec3(GetPosition())) < 9.0f)
 				m_pathState++;
 			break;
 		case 6:
@@ -155,11 +155,11 @@ CHeli::ProcessControl(void)
 				break;
 			m_pathState = 7;
 			GetMatrix().GetPosition().z = 31.55f;
-			m_vecMoveSpeed = CVector(0.0f, 0.0f, 0.0f);
+			m_vecMoveSpeed = glm::vec3(0.0f, 0.0f, 0.0f);
 			break;
 		case 7:
 			GetMatrix().GetPosition().z = 31.55f;
-			target = GetPosition();
+			target = toVec3(GetPosition());
 			break;
 
 
@@ -178,7 +178,7 @@ CHeli::ProcessControl(void)
 			target.x = DamPathX[PathPoint];
 			target.y = DamPathY[PathPoint];
 			target.z = DamPathZ[PathPoint];
-			if((target - GetPosition()).Magnitude() < 9.0f){
+			if(glm::length(target - toVec3(GetPosition())) < 9.0f){
 				PathPoint++;
 				if(PathPoint >= 6){
 					m_pathState = 10;
@@ -190,7 +190,7 @@ CHeli::ProcessControl(void)
 			target.x = ShortPathX[PathPoint];
 			target.y = ShortPathY[PathPoint];
 			target.z = ShortPathZ[PathPoint];
-			if((target - GetPosition()).Magnitude() < 9.0f){
+			if(glm::length(target - toVec3(GetPosition())) < 9.0f) {
 				PathPoint++;
 				if(PathPoint >= 3){
 					m_pathState = 9;
@@ -203,7 +203,7 @@ CHeli::ProcessControl(void)
 			target.x = LongPathX[PathPoint];
 			target.y = LongPathY[PathPoint];
 			target.z = LongPathZ[PathPoint];
-			if((target - GetPosition()).Magnitude() < 9.0f){
+			if(glm::length(target - toVec3(GetPosition())) < 9.0f) {
 				PathPoint++;
 				if(PathPoint >= 7){
 					m_pathState = 9;
@@ -221,14 +221,14 @@ CHeli::ProcessControl(void)
 			break;
 		}
 
-		vTargetDist = target - GetPosition();
+		vTargetDist = target - toVec3(GetPosition());
 		m_fTargetZ = target.z;
 		if(m_pathState == 6){
 			GetMatrix().GetPosition().x = GetMatrix().GetPosition().x*0.99f + target.x*0.01f;
 			GetMatrix().GetPosition().y = GetMatrix().GetPosition().y*0.99f + target.y*0.01f;
 		}
 	}else{
-		vTargetDist = FindPlayerCoors() - GetPosition();
+		vTargetDist = toVec3(FindPlayerCoors() - GetPosition());
 		m_fTargetZ = FindPlayerCoors().z;
 
 		// Heli flies away to (0, 0)
@@ -263,7 +263,7 @@ CHeli::ProcessControl(void)
 		m_vecMoveSpeed.z = Clamp(m_vecMoveSpeed.z, -0.3f, 0.3f);
 	}
 
-	float fTargetDist = vTargetDist.Magnitude();
+	float fTargetDist = glm::length(vTargetDist);
 
 	switch(m_heliStatus){
 	case HELI_STATUS_HOVER:
@@ -307,7 +307,7 @@ CHeli::ProcessControl(void)
 		vTargetDist /= fTargetDist;
 	else
 		vTargetDist.x = 1.0f;
-	CVector2D targetSpeed = vTargetDist * speed;
+	glm::vec2 targetSpeed = vTargetDist * speed;
 
 	if(m_heliStatus == HELI_STATUS_HOVER2 || m_heliStatus == HELI_STATUS_SHOT_DOWN){
 		bool force = !!((CTimer::GetFrameCounter() + m_randomSeed) & 8);
@@ -359,8 +359,8 @@ CHeli::ProcessControl(void)
 		if(m_fTargetOffset >= 2.0f)
 			m_fTargetOffset -= 2.0f;
 
-	CVector2D speedDir = targetSpeed - m_vecMoveSpeed;
-	float speedDiff = speedDir.Magnitude();
+	glm::vec2 speedDir = targetSpeed - glm::vec2(m_vecMoveSpeed);
+	float speedDiff = glm::length(speedDir);
 	if(speedDiff != 0.0f)
 		speedDir /= speedDiff;
 	else

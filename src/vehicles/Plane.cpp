@@ -328,7 +328,7 @@ CPlane::ProcessControl(void)
 			if(dist < 0.0f)
 				dist += TotalLengthOfFlightPath;
 			float f = (pathPositionRear - pPathNodes[m_nCurPathNode].t)/dist;
-			CVector posRear = (1.0f - f)*pPathNodes[m_nCurPathNode].p + f*pPathNodes[nextTrackNode].p;
+			glm::vec3 posRear = toVec3((1.0f - f) * pPathNodes[m_nCurPathNode].p + f * pPathNodes[nextTrackNode].p);
 
 			// Same for the front
 			float pathPositionFront = pathPositionRear + 60.0f;
@@ -358,7 +358,7 @@ CPlane::ProcessControl(void)
 			if(dist < 0.0f)
 				dist += TotalLengthOfFlightPath;
 			f = (pathPositionFront - pPathNodes[curPathNodeFront].t)/dist;
-			CVector posFront = (1.0f - f)*pPathNodes[curPathNodeFront].p + f*pPathNodes[nextPathNodeFront].p;
+			glm::vec3 posFront = toVec3((1.0f - f) * pPathNodes[curPathNodeFront].p + f * pPathNodes[nextPathNodeFront].p);
 
 			// And for another point 60 units in front of the plane, used to calculate roll
 			float pathPositionFront2 = pathPositionFront + 60.0f;
@@ -388,34 +388,37 @@ CPlane::ProcessControl(void)
 			if(dist < 0.0f)
 				dist += TotalLengthOfFlightPath;
 			f = (pathPositionFront2 - pPathNodes[curPathNodeFront2].t)/dist;
-			CVector posFront2 = (1.0f - f)*pPathNodes[curPathNodeFront2].p + f*pPathNodes[nextPathNodeFront2].p;
+			glm::vec3 posFront2 = toVec3((1.0f - f) * pPathNodes[curPathNodeFront2].p + f * pPathNodes[nextPathNodeFront2].p);
 
 			// Now set matrix
 			GetMatrix().SetTranslateOnly((posRear + posFront) / 2.0f);
 			GetMatrix().GetPosition().z += 4.3f;
-			CVector fwd = posFront - posRear;
-			fwd.Normalise();
+			glm::vec3 fwd = posFront - posRear;
+			fwd = glm::normalize(fwd);
+
 			if(pitch != 0.0f){
 				fwd.z += 0.4f*pitch;
-				fwd.Normalise();
+				fwd = glm::normalize(fwd);
 			}
-			CVector fwd2 = posFront2 - posRear;
-			fwd2.Normalise();
-			CVector roll = CrossProduct(fwd, fwd2);
-			CVector right = CrossProduct(fwd, CVector(0.0f, 0.0f, 1.0f));
+			glm::vec3 fwd2 = posFront2 - posRear;
+			fwd2 = glm::normalize(fwd2);
+
+			glm::vec3 roll = glm::cross(fwd, fwd2);
+			glm::vec3 right = glm::cross(fwd, glm::vec3(0.0f, 0.0f, 1.0f));
 			if(!bothOnGround)
 				right.z += 3.0f*roll.z;
-			right.Normalise();
-			CVector up = CrossProduct(right, fwd);
-			GetMatrix().GetRight() = right;
-			GetMatrix().GetUp() = up;
-			GetMatrix().GetForward() = fwd;
+			right = glm::normalize(right);
+
+			glm::vec3 up = glm::cross(right, fwd);
+			GetMatrix().GetRight() = toVec(right);
+			GetMatrix().GetUp() = toVec(up);
+			GetMatrix().GetForward() = toVec(fwd);
 			// Set speed
 			m_vecMoveSpeed = fwd*PlanePathSpeed[m_nPlaneId]/60.0f;
 			m_fSpeed = PlanePathSpeed[m_nPlaneId]/60.0f;
-			m_vecTurnSpeed = CVector(0.0f, 0.0f, 0.0f);
+			m_vecTurnSpeed = glm::vec3(0.0f, 0.0f, 0.0f);
 
-			m_isFarAway = !((posFront - TheCamera.GetPosition()).MagnitudeSqr2D() < sq(300.0f));
+			m_isFarAway = !((toVec(posFront) - TheCamera.GetPosition()).MagnitudeSqr2D() < sq(300.0f));
 		}else{
 			float planePathPosition;
 			float totalLengthOfFlightPath;
@@ -465,7 +468,7 @@ CPlane::ProcessControl(void)
 			if(dist < 0.0f)
 				dist += totalLengthOfFlightPath;
 			float f = (pathPositionRear - pathNodes[m_nCurPathNode].t)/dist;
-			CVector posRear = (1.0f - f)*pathNodes[m_nCurPathNode].p + f*pathNodes[nextTrackNode].p;
+			glm::vec3 posRear = toVec3((1.0f - f) * pathNodes[m_nCurPathNode].p + f * pathNodes[nextTrackNode].p);
 
 			// Same for the front
 			float pathPositionFront = pathPositionRear + 20.0f;
@@ -495,7 +498,7 @@ CPlane::ProcessControl(void)
 			if(dist < 0.0f)
 				dist += totalLengthOfFlightPath;
 			f = (pathPositionFront - pathNodes[curPathNodeFront].t)/dist;
-			CVector posFront = (1.0f - f)*pathNodes[curPathNodeFront].p + f*pathNodes[nextPathNodeFront].p;
+			glm::vec3 posFront = toVec3((1.0f - f) * pathNodes[curPathNodeFront].p + f * pathNodes[nextPathNodeFront].p);
 
 			// And for another point 30 units in front of the plane, used to calculate roll
 			float pathPositionFront2 = pathPositionFront + 30.0f;
@@ -525,30 +528,32 @@ CPlane::ProcessControl(void)
 			if(dist < 0.0f)
 				dist += totalLengthOfFlightPath;
 			f = (pathPositionFront2 - pathNodes[curPathNodeFront2].t)/dist;
-			CVector posFront2 = (1.0f - f)*pathNodes[curPathNodeFront2].p + f*pathNodes[nextPathNodeFront2].p;
+			glm::vec3 posFront2 = toVec3((1.0f - f) * pathNodes[curPathNodeFront2].p + f * pathNodes[nextPathNodeFront2].p);
 
 			// Now set matrix
 			GetMatrix().SetTranslateOnly((posRear + posFront) / 2.0f);
 			GetMatrix().GetPosition().z += 1.0f;
-			CVector fwd = posFront - posRear;
-			fwd.Normalise();
-			CVector fwd2 = posFront2 - posRear;
-			fwd2.Normalise();
-			CVector roll = CrossProduct(fwd, fwd2);
-			CVector right = CrossProduct(fwd, CVector(0.0f, 0.0f, 1.0f));
+			glm::vec3 fwd = posFront - posRear;
+			fwd = glm::normalize(fwd);
+
+			glm::vec3 fwd2 = posFront2 - posRear;
+			fwd2 = glm::normalize(fwd2);
+
+			glm::vec3 roll = glm::cross(fwd, fwd2);
+			glm::vec3 right = glm::cross(fwd, glm::vec3(0.0f, 0.0f, 1.0f));
 			right.z += 3.0f*roll.z;
-			right.Normalise();
-			CVector up = CrossProduct(right, fwd);
-			GetMatrix().GetRight() = right;
-			GetMatrix().GetUp() = up;
-			GetMatrix().GetForward() = fwd;
+			right = glm::normalize(right);
+			glm::vec3 up = glm::cross(right, fwd);
+			GetMatrix().GetRight() = toVec(right);
+			GetMatrix().GetUp() = toVec(up);
+			GetMatrix().GetForward() = toVec(fwd);
 
 			// Set speed
 			m_vecMoveSpeed = fwd*planePathSpeed/60.0f;
 			m_fSpeed = planePathSpeed/60.0f;
-			m_vecTurnSpeed = CVector(0.0f, 0.0f, 0.0f);
+			m_vecTurnSpeed = glm::vec3(0.0f, 0.0f, 0.0f);
 
-			m_isFarAway = !((posFront - TheCamera.GetPosition()).MagnitudeSqr2D() < sq(300.0f));
+			m_isFarAway = !((toVec(posFront) - TheCamera.GetPosition()).MagnitudeSqr2D() < sq(300.0f));
 		}
 	}
 

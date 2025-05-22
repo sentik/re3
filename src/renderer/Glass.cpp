@@ -855,7 +855,7 @@ CGlass::CarWindscreenShatters(CVehicle *vehicle, bool unk)
 	PlayOneShotScriptObject(SCRIPT_SOUND_GLASS_BREAK_L, vehicle->GetPosition());
 	
 	CVector center = v[originIndex] + ((0.5f*bound1) * vec1) + ((0.5f*bound2) * vec2);
-	CVector speed = vehicle->m_vecMoveSpeed;
+	CVector speed = toVec(vehicle->m_vecMoveSpeed);
 	CVector right = bound2 * vec2;
 	CVector up    = bound1 * vec1;
 	CVector pos   = v[originIndex];

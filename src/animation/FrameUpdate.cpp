@@ -220,9 +220,9 @@ FrameUpdateCallBackWith3dVelocityExtractionNonSkinned(AnimBlendFrameData *frame,
 	}
 
 	if((frame->flag & AnimBlendFrameData::IGNORE_TRANSLATION) == 0){
-		*gpAnimBlendClump->velocity3d = trans - cur;
+		*gpAnimBlendClump->velocity3d = toVec3(trans - cur);
 		if(looped)
-			*gpAnimBlendClump->velocity3d += end;
+			*gpAnimBlendClump->velocity3d += toVec3(end);
 		mat->pos.x = (pos - trans).x + frame->resetPos.x;
 		mat->pos.y = (pos - trans).y + frame->resetPos.y;
 		mat->pos.z = (pos - trans).z + frame->resetPos.z;
@@ -432,9 +432,9 @@ FrameUpdateCallBackWith3dVelocityExtractionSkinned(AnimBlendFrameData *frame, vo
 	}
 
 	if((frame->flag & AnimBlendFrameData::IGNORE_TRANSLATION) == 0){
-		*gpAnimBlendClump->velocity3d = trans - cur;
+		*gpAnimBlendClump->velocity3d = toVec3(trans - cur);
 		if(looped)
-			*gpAnimBlendClump->velocity3d += end;
+			*gpAnimBlendClump->velocity3d += toVec3(end);
 		xform->t.x = (pos - trans).x + frame->resetPos.x;
 		xform->t.y = (pos - trans).y + frame->resetPos.y;
 		xform->t.z = (pos - trans).z + frame->resetPos.z;
@@ -481,11 +481,9 @@ FrameUpdateCallBackNonSkinnedCompressed(AnimBlendFrameData *frame, void *arg)
 		for(node = updateData->nodes; *node; node++){
 			if((*node)->sequence){
 				bool nodelooped = (*node)->UpdateCompressed(vec, q, 1.0f-totalBlendAmount);
-#ifdef FIX_BUGS
 				if(DotProduct(rot, q) < 0.0f)
 					rot -= q;
 				else
-#endif
 					rot += q;
 				if((*node)->sequence->HasTranslation()){
 					pos += vec;
@@ -509,9 +507,9 @@ FrameUpdateCallBackNonSkinnedCompressed(AnimBlendFrameData *frame, void *arg)
 		}
 
 		if((frame->flag & AnimBlendFrameData::IGNORE_TRANSLATION) == 0){
-			*gpAnimBlendClump->velocity3d = trans - cur;
+			*gpAnimBlendClump->velocity3d = toVec3(trans - cur);
 			if(looped)
-				*gpAnimBlendClump->velocity3d += end;
+				*gpAnimBlendClump->velocity3d += toVec3(end);
 			mat->pos.x = (pos - trans).x + frame->resetPos.x;
 			mat->pos.y = (pos - trans).y + frame->resetPos.y;
 			mat->pos.z = (pos - trans).z + frame->resetPos.z;
@@ -618,9 +616,8 @@ FrameUpdateCallBackSkinnedCompressed(AnimBlendFrameData *frame, void *arg)
 		}
 
 		if((frame->flag & AnimBlendFrameData::IGNORE_TRANSLATION) == 0){
-			*gpAnimBlendClump->velocity3d = trans - cur;
-			if(looped)
-				*gpAnimBlendClump->velocity3d += end;
+			*gpAnimBlendClump->velocity3d = toVec3(trans - cur);
+			if(looped) *gpAnimBlendClump->velocity3d += toVec3(end);
 			xform->t.x = (pos - trans).x + frame->resetPos.x;
 			xform->t.y = (pos - trans).y + frame->resetPos.y;
 			xform->t.z = (pos - trans).z + frame->resetPos.z;

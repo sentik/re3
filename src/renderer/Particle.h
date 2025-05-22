@@ -64,6 +64,11 @@ public:
 
 	static CParticle *AddParticle(tParticleType type, CVector const &vecPos, CVector const &vecDir, CEntity *pEntity = nil, float fSize = 0.0f,               int32 nRotationSpeed = 0, int32 nRotation = 0, int32 nCurFrame = 0, int32 nLifeSpan = 0);
 	static CParticle *AddParticle(tParticleType type, CVector const &vecPos, CVector const &vecDir, CEntity *pEntity,       float fSize, RwRGBA const &color, int32 nRotationSpeed = 0, int32 nRotation = 0, int32 nCurFrame = 0, int32 nLifeSpan = 0);
+	static CParticle* AddParticle(tParticleType type, glm::vec3 const& vecPos, glm::vec3 const& vecDir, CEntity* pEntity, float fSize, RwRGBA const& color,
+		int32 nRotationSpeed = 0, int32 nRotation = 0, int32 nCurFrame = 0, int32 nLifeSpan = 0)
+	{
+		return AddParticle(type, toVec(vecPos), toVec(vecDir), pEntity, fSize, nRotationSpeed, nRotation, nCurFrame, nLifeSpan);
+	}
 
 	static void Update();
 	static void Render();

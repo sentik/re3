@@ -889,7 +889,7 @@ CPlayerPed::PlayerControl1stPersonRunAround(CPad *padUsed)
 	if (m_nPedState == PED_JUMP) {
 		if (bIsInTheAir) {
 			if (bUsesCollision && !bHitSteepSlope && (!bHitSomethingLastFrame || m_vecDamageNormal.z > 0.6f)
-				&& m_fDistanceTravelled < CTimer::GetTimeStepInSeconds() && m_vecMoveSpeed.MagnitudeSqr() < 0.01f) {
+				&& m_fDistanceTravelled < CTimer::GetTimeStepInSeconds() && glm::dot(m_vecMoveSpeed, m_vecMoveSpeed) < 0.01f) {
 
 				float angleSin = Sin(m_fRotationCur); // originally sin(DEGTORAD(RADTODEG(m_fRotationCur))) o_O
 				float angleCos = Cos(m_fRotationCur);
@@ -1535,7 +1535,7 @@ CPlayerPed::PlayerControlZelda(CPad *padUsed)
 	if (m_nPedState == PED_JUMP) {
 		if (bIsInTheAir) {
 			if (bUsesCollision && !bHitSteepSlope && (!bHitSomethingLastFrame || m_vecDamageNormal.z > 0.6f)
-				&& m_fDistanceTravelled < CTimer::GetTimeStepInSeconds() && m_vecMoveSpeed.MagnitudeSqr() < 0.01f) {
+				&& m_fDistanceTravelled < CTimer::GetTimeStepInSeconds() && glm::dot(m_vecMoveSpeed, m_vecMoveSpeed) < 0.01f) {
 
 				float angleSin = Sin(m_fRotationCur); // originally sin(DEGTORAD(RADTODEG(m_fRotationCur))) o_O
 				float angleCos = Cos(m_fRotationCur);
@@ -1945,7 +1945,7 @@ CPlayerPed::ProcessControl(void)
 		SetLookTimer(250);
 	}
 
-	if (m_vecMoveSpeed.Magnitude2D() < 0.1f) {
+	if(glm::length(glm::vec2(m_vecMoveSpeed)) < 0.1f) {
 		if (m_nSpeedTimer) {
 			if (CTimer::GetTimeInMilliseconds() > m_nSpeedTimer)
 				m_bSpeedTimerFlag = true;

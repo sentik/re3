@@ -51,7 +51,7 @@ CEmergencyPed::ProcessControl(void)
 	if(!DyingOrDead()) {
 		GetWeapon()->Update(m_audioEntityId, nil);
 
-		if (IsPedInControl() && m_moved.Magnitude() > 0.0f)
+		if (IsPedInControl() && glm::length(m_moved) > 0.0f)
 			Avoid();
 
 		switch (m_nPedState) {
@@ -183,8 +183,9 @@ CEmergencyPed::MedicAI(void)
 
 	if (InVehicle()) {
 		if (m_pMyVehicle->IsCar() && m_objective != OBJECTIVE_LEAVE_CAR) {
-			if (gAccidentManager.FindNearestAccident(m_pMyVehicle->GetPosition(), &distToEmergency)
-				&& distToEmergency < 25.0f && m_pMyVehicle->m_vecMoveSpeed.Magnitude() < 0.01f) {
+			if (gAccidentManager.FindNearestAccident(m_pMyVehicle->GetPosition(), &distToEmergency) && distToEmergency < 25.0f &&
+			   glm::length(m_pMyVehicle->m_vecMoveSpeed) < 0.01f)
+				{
 
 				m_pMyVehicle->AutoPilot.m_nCarMission = MISSION_NONE;
 				SetObjective(OBJECTIVE_LEAVE_CAR, m_pMyVehicle);

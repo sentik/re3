@@ -71,6 +71,7 @@ public:
 		pz += z;
 	}
 	void Translate(const CVector &trans){ Translate(trans.x, trans.y, trans.z); }
+	void Translate(const glm::vec3 &trans) { Translate(trans.x, trans.y, trans.z); }
 
 	void SetScale(float s);
 	void Scale(float scale)
@@ -114,6 +115,9 @@ public:
 		pz = z;
 	}
 	void SetTranslateOnly(const CVector& pos) {
+		SetTranslateOnly(pos.x, pos.y, pos.z);
+	}  
+	void SetTranslateOnly(const glm::vec3& pos) {
 		SetTranslateOnly(pos.x, pos.y, pos.z);
 	}
 	void CheckIntegrity(){}

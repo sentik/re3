@@ -1009,7 +1009,7 @@ CEscalator::Update(void) {
 				}
 
 				m_pSteps[i]->SetPosition(newPosition);
-				m_pSteps[i]->m_vecMoveSpeed = (newPosition - oldPosition) / Max(CTimer::GetTimeStep(), 1.0f);
+				m_pSteps[i]->m_vecMoveSpeed = toVec3(newPosition - oldPosition) / Max(CTimer::GetTimeStep(), 1.0f);
 				m_pSteps[i]->GetMatrix().UpdateRW();
 				m_pSteps[i]->UpdateRwFrame();
 			}
@@ -1200,16 +1200,16 @@ void CScriptPath::Update(void) {
 				m_pObjects[i]->GetMatrix().UpdateRW();
 				m_pObjects[i]->UpdateRwFrame();
 
-				m_pObjects[i]->m_vecMoveSpeed = (m_pObjects[i]->GetPosition() - prevMat.GetPosition()) / CTimer::GetTimeStep();
+				m_pObjects[i]->m_vecMoveSpeed = toVec3((m_pObjects[i]->GetPosition() - prevMat.GetPosition())) / CTimer::GetTimeStep();
 
 				float deltaAngle = m_pObjects[i]->GetForward().Heading() - prevMat.GetForward().Heading();
 				while (deltaAngle < (float)PI) deltaAngle += (float)TWOPI;
 				while (deltaAngle > (float)PI) deltaAngle -= (float)TWOPI;
 				float zTurnSpeed = deltaAngle / CTimer::GetTimeStep();
 
-				m_pObjects[i]->m_vecTurnSpeed = CVector(0.0f, 0.0f, zTurnSpeed);
-				m_pObjects[i]->m_vecMoveFriction = CVector(0.0f, 0.0f, 0.0f);
-				m_pObjects[i]->m_vecTurnFriction = CVector(0.0f, 0.0f, 0.0f);
+				m_pObjects[i]->m_vecTurnSpeed = glm::vec3(0.0f, 0.0f, zTurnSpeed);
+				m_pObjects[i]->m_vecMoveFriction = glm::vec3(0.0f, 0.0f, 0.0f);
+				m_pObjects[i]->m_vecTurnFriction = glm::vec3(0.0f, 0.0f, 0.0f);
 			}
 		}
 	}

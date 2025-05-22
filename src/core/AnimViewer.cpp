@@ -310,7 +310,7 @@ CAnimViewer::Update(void)
 			TheCamera.TakeControl(pTarget, CCam::MODE_MODELVIEW, JUMP_CUT, CAMCONTROL_SCRIPT);
 		}
 		if (pTarget->IsVehicle() || pTarget->IsPed() || pTarget->IsObject()) {
-			((CPhysical*)pTarget)->m_vecMoveSpeed = CVector(0.0f, 0.0f, 0.0f);
+			((CPhysical*)pTarget)->m_vecMoveSpeed = glm::vec3(0.0f, 0.0f, 0.0f);
 		}
 #ifdef FIX_BUGS
 		// so we don't end up in the water

@@ -555,7 +555,7 @@ public:
 	int16 m_routePointsPassed;
 	int16 m_routeType;	// See PedRouteType
 	int16 m_routePointsBeingPassed;
-	CVector2D m_moved;
+	glm::vec2 m_moved;
 	float m_fRotationCur;
 	float m_fRotationDest;
 	float m_headingRate;
@@ -775,6 +775,7 @@ public:
 	int32 ChooseAttackPlayer(uint8, bool);
 	int32 ChooseAttackAI(uint8, bool);
 	int GetLocalDirection(const CVector2D &);
+	int GetLocalDirection(const glm::vec2 &);
 	void StartFightDefend(uint8, uint8, uint8);
 	void PlayHitSound(CPed*);
 	void SetFall(int, AnimationId, uint8);

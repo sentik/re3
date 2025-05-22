@@ -120,7 +120,7 @@ CWeaponInfo::Initialise(void)
 		aWeaponInfo[i].m_fRadius = 0.0f;
 		aWeaponInfo[i].m_fLifespan = 0.0f;
 		aWeaponInfo[i].m_fSpread = 0.0f;
-		aWeaponInfo[i].m_vecFireOffset = CVector(0.0f, 0.0f, 0.0f);
+		aWeaponInfo[i].m_vecFireOffset = glm::vec3(0.0f, 0.0f, 0.0f);
 		aWeaponInfo[i].m_AnimToPlay = ASSOCGRP_UNARMED;
 		aWeaponInfo[i].m_fAnimLoopStart = 0.0f;
 		aWeaponInfo[i].m_fAnimLoopEnd = 0.0f;
@@ -219,7 +219,7 @@ CWeaponInfo::LoadWeaponData(void)
 
 		weaponType = FindWeaponType(weaponName);
 
-		CVector vecFireOffset(fireOffsetX, fireOffsetY, fireOffsetZ);
+		glm::vec3 vecFireOffset(fireOffsetX, fireOffsetY, fireOffsetZ);
 
 		aWeaponInfo[weaponType].m_eWeaponFire = FindWeaponFireType(fireType);
 		aWeaponInfo[weaponType].m_fRange = range;

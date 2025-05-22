@@ -236,15 +236,17 @@ void CWaterCannon::PushPeds(void)
 							ped->m_vecMoveSpeed.x = (0.6f * m_avecVelocity[j].x + ped->m_vecMoveSpeed.x) * 0.5f;
 							ped->m_vecMoveSpeed.y = (0.6f * m_avecVelocity[j].y + ped->m_vecMoveSpeed.y) * 0.5f;
 							
-							float pedSpeed2D = ped->m_vecMoveSpeed.Magnitude2D();
+							float pedSpeed2D = glm::length(glm::vec2(ped->m_vecMoveSpeed));
 
 							if ( pedSpeed2D > 0.2f ) {
 								ped->m_vecMoveSpeed.x *= (0.2f / pedSpeed2D);
 								ped->m_vecMoveSpeed.y *= (0.2f / pedSpeed2D);
 							}
 							ped->SetFall(2000, (AnimationId)(localDir + ANIM_STD_HIGHIMPACT_FRONT), 0);
-							CParticle::AddParticle(PARTICLE_STEAM_NY_SLOWMOTION, ped->GetPosition(), ped->m_vecMoveSpeed * 0.3f, 0, 0.5f);
-							CParticle::AddParticle(PARTICLE_CAR_SPLASH, ped->GetPosition(), ped->m_vecMoveSpeed * -0.3f + CVector(0.f, 0.f, 0.5f), 0, 0.5f,
+							CParticle::AddParticle(PARTICLE_STEAM_NY_SLOWMOTION, ped->GetPosition(),
+							                       toVec(ped->m_vecMoveSpeed) * 0.3f, 0, 0.5f);
+							CParticle::AddParticle(PARTICLE_CAR_SPLASH, ped->GetPosition(),
+							                       toVec(ped->m_vecMoveSpeed * -0.3f) + CVector(0.f, 0.f, 0.5f), 0, 0.5f,
 								CGeneral::GetRandomNumberInRange(0.f, 10.f), CGeneral::GetRandomNumberInRange(0.f, 90.f), 1);
 							
 							j = NUM_SEGMENTPOINTS;

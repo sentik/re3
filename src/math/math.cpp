@@ -18,6 +18,8 @@ CreateScaleMatrix(float s)
 	return matrix;
 };
 
+
+
 void TransformPoint(CVuVector &out, const CMatrix &mat, const CVuVector &in)
 {
 #ifdef GTA_PS2

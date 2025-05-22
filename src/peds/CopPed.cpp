@@ -350,13 +350,14 @@ CCopPed::CopAI(void)
 		if (!m_bIsDisabledCop) {
 			// Turn and shoot the player's vehicle, if possible
 			if (!m_bIsInPursuit && !GetWeapon()->IsTypeMelee() && FindPlayerVehicle() && m_fDistanceToTarget < CWeaponInfo::GetWeaponInfo(GetWeapon()->m_eWeaponType)->m_fRange) {
-				if (FindPlayerVehicle()->m_vecMoveSpeed.Magnitude2D() > 0.1f) {
-					CVector2D distToVeh = GetPosition() - FindPlayerVehicle()->GetPosition();
-					distToVeh.Normalise();
-					CVector2D vehSpeed = FindPlayerVehicle()->m_vecMoveSpeed;
-					vehSpeed.Normalise();
+				if(glm::length(glm::vec2(FindPlayerVehicle()->m_vecMoveSpeed)) > 0.1f) {
+					glm::vec2 distToVeh = toVec3(GetPosition() - FindPlayerVehicle()->GetPosition());
+					distToVeh = glm::normalize(distToVeh);
 
-					if (DotProduct2D(distToVeh, vehSpeed) > 0.8f) {
+					glm::vec2 vehSpeed = FindPlayerVehicle()->m_vecMoveSpeed;
+					vehSpeed = glm::normalize(vehSpeed);
+
+					if (glm::dot(distToVeh, vehSpeed) > 0.8f) {
 						SetLookFlag(playerOrHisVeh, true);
 						SetMoveState(PEDMOVE_STILL);
 						if (TurnBody()) {
@@ -424,7 +425,7 @@ CCopPed::CopAI(void)
 					--wanted->m_CopsBeatingSuspect;
 					m_bBeatingSuspect = false;
 				}
-				if (m_fDistanceToTarget * FindPlayerSpeed().Magnitude() > 4.0f)
+				if (m_fDistanceToTarget * glm::length(FindPlayerSpeed()) > 4.0f)
 					ClearPursuit();
 			}
 			return;
@@ -451,8 +452,9 @@ CCopPed::CopAI(void)
 							SetPursuit(false);
 							SetObjective(OBJECTIVE_KILL_CHAR_ANY_MEANS, FindPlayerPed());
 						}
-					} else if (m_fDistanceToTarget < 5.0f
-							&& (!FindPlayerVehicle() || FindPlayerVehicle()->m_vecMoveSpeed.MagnitudeSqr() < sq(1.f/200.f))) {
+					} else if (m_fDistanceToTarget < 5.0f &&
+					          (!FindPlayerVehicle() || glm::dot(FindPlayerVehicle()->m_vecMoveSpeed, m_vecMoveSpeed) < sq(1.f / 200.f)))
+						{
 						m_bIsDisabledCop = false;
 						bKindaStayInSamePlace = false;
 						bNotAllowedToDuck = false;
@@ -480,7 +482,7 @@ CCopPed::CopAI(void)
 				}
 			} else {
 				if (m_fDistanceToTarget < weaponRange) {
-					CVector gunPos = weaponInfo->m_vecFireOffset;
+					CVector gunPos = toVec(weaponInfo->m_vecFireOffset);
 					TransformToNode(gunPos, PED_HANDR);
 
 					CColPoint foundCol;
@@ -620,7 +622,7 @@ CCopPed::ProcessControl(void)
 		return;
 	}
 	GetWeapon()->Update(m_audioEntityId, nil);
-	if (m_moved.Magnitude() > 0.0f)
+	if (glm::length(m_moved) > 0.0f)
 		Avoid();
 
 	CPhysical *playerOrHisVeh = FindPlayerVehicle() ? (CPhysical*)FindPlayerVehicle() : (CPhysical*)FindPlayerPed();
@@ -816,7 +818,7 @@ CCopPed::ProcessHeliSwat(void)
 	if (GetPosition().z - 2.0f >= bestPos.z && m_pRopeEntity) {
 		m_fAbseilPos += 0.003f * CTimer::GetTimeStep();
 		m_vecMoveSpeed.z = -0.03f;
-		m_vecTurnSpeed = CVector(0.f, 0.f, (m_randomSeed % 32) * 0.003f - 0.05f);
+		m_vecTurnSpeed = glm::vec3(0.f, 0.f, (m_randomSeed % 32) * 0.003f - 0.05f);
 		CPhysical::ApplyTurnSpeed();
 		GetMatrix().Reorthogonalise();
 		CVector posOnRope;
@@ -825,7 +827,7 @@ CCopPed::ProcessHeliSwat(void)
 			SetPosition(posOnRope);
 		} else {
 			bUsesCollision = true;
-			m_vecMoveSpeed = CVector(0.f, 0.f, 0.f);
+			m_vecMoveSpeed = glm::vec3(0.f, 0.f, 0.f);
 			SetPedState(PED_IDLE);
 			m_nCopType = COP_SWAT;
 			SetInTheAir();
@@ -834,7 +836,7 @@ CCopPed::ProcessHeliSwat(void)
 		Say(SOUND_PED_COP_HELIPILOTPHRASE);
 	} else {
 		bUsesCollision = true;
-		m_vecMoveSpeed = CVector(0.f, 0.f, 0.f);
+		m_vecMoveSpeed = glm::vec3(0.f, 0.f, 0.f);
 		SetPedState(PED_IDLE);
 		m_nCopType = COP_SWAT;
 		SetInTheAir();
@@ -849,13 +851,14 @@ CCopPed::ProcessStingerCop(void)
 		if (m_pStinger->bIsDeployed) {
 			m_pStinger->Process();
 		} else {
-			CVector2D vehDist = GetPosition() - FindPlayerVehicle()->GetPosition();
-			CVector2D dirVehGoing = FindPlayerVehicle()->m_vecMoveSpeed;
-			if (vehDist.MagnitudeSqr() < sq(30.0f)) {
-				if (dirVehGoing.MagnitudeSqr() > 0.0f) {
-					vehDist.Normalise();
-					dirVehGoing.Normalise();
-					if (DotProduct2D(vehDist, dirVehGoing) > 0.8f) {
+			glm::vec2 vehDist = toVec3(GetPosition() - FindPlayerVehicle()->GetPosition());
+			glm::vec2 dirVehGoing = FindPlayerVehicle()->m_vecMoveSpeed;
+			if(glm::dot(vehDist, vehDist) < sq(30.0f)) {
+				if(glm::dot(dirVehGoing, dirVehGoing) > 0.0f) {
+					vehDist = glm::normalize(vehDist);
+					dirVehGoing = glm::normalize(dirVehGoing);
+
+					if (glm::dot(vehDist, dirVehGoing) > 0.8f) {
 						float angle = (CrossProduct2D(vehDist, dirVehGoing - vehDist) < 0.0f ?
 							FindPlayerVehicle()->GetForward().Heading() - HALFPI :
 							HALFPI + FindPlayerVehicle()->GetForward().Heading());

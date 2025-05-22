@@ -46,7 +46,7 @@ public:
 	float m_fRadius;
 	float m_fLifespan;
 	float m_fSpread;
-	CVector m_vecFireOffset;
+	glm::vec3 m_vecFireOffset;
 	AssocGroupId m_AnimToPlay;
 	float m_fAnimLoopStart;
 	float m_fAnimLoopEnd;

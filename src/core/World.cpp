@@ -850,6 +850,13 @@ CWorld::FindObjectsOfTypeInRange(uint32 modelId, const CVector &position, float 
 }
 
 CEntity *
+CWorld::TestSphereAgainstWorld(const glm::vec3 &centre, float radius, CEntity *entityToIgnore, bool checkBuildings, bool checkVehicles, bool checkPeds,
+                               bool checkObjects, bool checkDummies, bool ignoreSomeObjects)
+{
+	return TestSphereAgainstWorld(toVec(centre), radius, entityToIgnore, checkBuildings, checkVehicles, checkPeds, checkObjects, checkDummies, ignoreSomeObjects);
+}
+
+CEntity *
 CWorld::TestSphereAgainstWorld(CVector centre, float radius, CEntity *entityToIgnore, bool checkBuildings,
                                bool checkVehicles, bool checkPeds, bool checkObjects, bool checkDummies,
                                bool ignoreSomeObjects)
@@ -1567,7 +1574,7 @@ CWorld::RemoveFallenPeds(void)
 					CVector newPos = ThePaths.m_pathNodes[closestNode].GetPosition();
 					newPos.z += 2.0f;
 					ped->Teleport(newPos);
-					ped->m_vecMoveSpeed = CVector(0.0f, 0.0f, 0.0f);
+					ped->m_vecMoveSpeed = glm::vec3(0.0f, 0.0f, 0.0f);
 				} else {
 					CPopulation::RemovePed(ped);
 				}
@@ -1591,7 +1598,7 @@ CWorld::RemoveFallenCars(void)
 					CVector newPos = ThePaths.m_pathNodes[closestNode].GetPosition();
 					newPos.z += 3.0f;
 					veh->Teleport(newPos);
-					veh->m_vecMoveSpeed = CVector(0.0f, 0.0f, 0.0f);
+					veh->m_vecMoveSpeed = glm::vec3(0.0f, 0.0f, 0.0f);
 				} else if(veh->VehicleCreatedBy == RANDOM_VEHICLE ||
 				          veh->VehicleCreatedBy == PARKED_VEHICLE) {
 					Remove(veh);

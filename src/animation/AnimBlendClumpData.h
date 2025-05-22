@@ -32,7 +32,7 @@ public:
 	int32 numFrames;
 	union {
 		CVector2D *velocity2d;
-		CVector *velocity3d;
+		glm::vec3 *velocity3d;
 	};
 	// order of frames is determined by RW hierarchy
 	AnimBlendFrameData *frames;

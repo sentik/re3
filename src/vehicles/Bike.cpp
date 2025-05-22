@@ -197,7 +197,7 @@ CBike::SetModelIndex(uint32 id)
 }
 
 #define SAND_SLOWDOWN (0.02f)
-CVector vecTestResistance(0.9995f, 0.9f, 0.95f);
+glm::vec3 vecTestResistance(0.9995f, 0.9f, 0.95f);
 float fDAxisX = 1.0f;
 float fDAxisXExtra = 100.0f;
 float fDAxisY = 1000.0f;
@@ -255,11 +255,11 @@ CBike::ProcessControl(void)
 #endif
 				if(m_fBrakePedal == 0.0f && !bIsHandbrakeOn || m_nWheelsOnGround == 0){
 					if(GetModelIndex() == MI_SANCHEZ){
-						float force = m_fLeanInput*m_fTurnMass*pBikeHandling->fLeanBackForce*Min(m_vecMoveSpeed.Magnitude(), 0.1f);
+						float force = m_fLeanInput*m_fTurnMass*pBikeHandling->fLeanBackForce*Min(glm::length(m_vecMoveSpeed), 0.1f);
 						force *= 0.7f*m_fGasPedal + 0.3f;
 						ApplyTurnForce(-force*CTimer::GetTimeStep()*GetUp(), com+GetForward());
 					}else{
-						float force = m_fLeanInput*m_fTurnMass*pBikeHandling->fLeanBackForce*Min(m_vecMoveSpeed.Magnitude(), 0.1f);
+						float force = m_fLeanInput*m_fTurnMass*pBikeHandling->fLeanBackForce*Min(glm::length(m_vecMoveSpeed), 0.1f);
 						force *= 0.5f*m_fGasPedal + 0.5f;
 						ApplyTurnForce(-force*CTimer::GetTimeStep()*GetUp(), com+GetForward());
 					}
@@ -267,13 +267,11 @@ CBike::ProcessControl(void)
 			}else{
 				m_vecCentreOfMass.y = pHandling->CentreOfMass.y + pBikeHandling->fLeanFwdCOM*m_fLeanInput;
 				CVector com = CVector(m_vecCentreOfMass.x, m_vecCentreOfMass.y, m_vecCentreOfMass.z);
-#ifdef FIX_BUGS
 				// see above
 				com.y = -com.y;
 				com = Multiply3x3(GetMatrix(), com);
-#endif
 				if(m_fBrakePedal < 0.0f || m_nWheelsOnGround == 0){
-					float force = m_fLeanInput*m_fTurnMass*pBikeHandling->fLeanFwdForce*Min(m_vecMoveSpeed.Magnitude(), 0.1f);
+					float force = m_fLeanInput*m_fTurnMass*pBikeHandling->fLeanFwdForce*Min(glm::length(m_vecMoveSpeed), 0.1f);
 					ApplyTurnForce(-force*CTimer::GetTimeStep()*GetUp(), com+GetForward());
 				}
 			}
@@ -287,11 +285,13 @@ CBike::ProcessControl(void)
 			   m_aSuspensionSpringRatio[1] < 1.0f && CSurfaceTable::GetAdhesionGroup(m_aWheelColPoints[1].surfaceB) == ADHESIVE_SAND ||
 			   m_aSuspensionSpringRatio[2] < 1.0f && CSurfaceTable::GetAdhesionGroup(m_aWheelColPoints[2].surfaceB) == ADHESIVE_SAND ||
 			   m_aSuspensionSpringRatio[3] < 1.0f && CSurfaceTable::GetAdhesionGroup(m_aWheelColPoints[3].surfaceB) == ADHESIVE_SAND){
-				CVector parallelSpeed = m_vecMoveSpeed - DotProduct(m_vecMoveSpeed, GetUp())*GetUp();
+				const auto vec3Up = toVec3(GetUp());
+				glm::vec3 parallelSpeed = m_vecMoveSpeed - glm::dot(m_vecMoveSpeed, vec3Up) * vec3Up;
 				if(m_fGasPedal > 0.3f){
-					if(parallelSpeed.MagnitudeSqr() < SQR(0.3f))
+					if(glm::dot(parallelSpeed, parallelSpeed) < SQR(0.3f))
 						bStuckInSand = true;
-					parallelSpeed -= DotProduct(parallelSpeed, GetForward())*GetForward();
+					const auto vec3Forward = toVec3(GetForward());
+					parallelSpeed -= glm::dot(parallelSpeed, vec3Forward) * vec3Forward;
 				}
 				ApplyMoveForce(parallelSpeed * -CTimer::GetTimeStep()*SAND_SLOWDOWN*m_fMass);
 			}
@@ -345,7 +345,7 @@ CBike::ProcessControl(void)
 
 	case STATUS_ABANDONED:
 		m_fBrakePedal = 0.0f;
-		if(m_vecMoveSpeed.MagnitudeSqr() < SQR(0.1f) || bIsStanding)
+		if(glm::dot(m_vecMoveSpeed, m_vecMoveSpeed) < SQR(0.1f) || bIsStanding)
 			bIsHandbrakeOn = true;
 		else	
 			bIsHandbrakeOn = false;
@@ -386,7 +386,7 @@ CBike::ProcessControl(void)
 		break;
 
 	case STATUS_PLAYER_DISABLED:
-		if(m_vecMoveSpeed.MagnitudeSqr() < SQR(0.1f)){
+		if(glm::dot(m_vecMoveSpeed, m_vecMoveSpeed) < SQR(0.1f)){
 			m_fBrakePedal = 1.0f;
 			bIsHandbrakeOn = true;
 		}else{
@@ -412,8 +412,8 @@ CBike::ProcessControl(void)
 
 	if(bBalancedByRider || bIsBeingPickedUp || bIsStanding){
 		float fDx = fDAxisX;
-		CVector res = vecTestResistance;
-		CVector localTurnSpeed = Multiply3x3(m_vecTurnSpeed, GetMatrix());
+		glm::vec3 res = vecTestResistance;
+		glm::vec3 localTurnSpeed = Multiply3x3(m_vecTurnSpeed, GetMatrix());
 
 		if(GetStatus() == STATUS_PLAYER){
 			if(m_aWheelTimer[BIKESUSP_F1] == 0.0f && m_aWheelTimer[BIKESUSP_F2] == 0.0f){
@@ -437,10 +437,10 @@ CBike::ProcessControl(void)
 		float turnX = localTurnSpeed.x*(res.x - 1.0f);
 		float turnY = localTurnSpeed.y*(res.y - 1.0f);
 
-		res = -GetUp() * turnY * m_fTurnMass;
+		res = -toVec3(GetUp() * turnY * m_fTurnMass);
 		ApplyTurnForce(res, GetRight() + Multiply3x3(GetMatrix(), m_vecCentreOfMass));
 
-		res = GetUp() * turnX * m_fTurnMass;
+		res = toVec3(GetUp() * turnX * m_fTurnMass);
 		ApplyTurnForce(res, GetForward() + Multiply3x3(GetMatrix(), m_vecCentreOfMass));
 
 		if(GetStatus() != STATUS_PLAYER)
@@ -456,8 +456,7 @@ CBike::ProcessControl(void)
 		bool makeStatic = false;
 		float moveSpeedLimit, turnSpeedLimit, distanceLimit;
 
-		if(!bVehicleColProcessed &&
-		   m_vecMoveSpeed.IsZero() &&
+		if(!bVehicleColProcessed && m_vecMoveSpeed == glm::vec3(0) &&
 		// BUG? m_aSuspensionSpringRatioPrev[3] is checked twice in the game. also, why 3?
 		   m_aSuspensionSpringRatioPrev[3] != 1.0f)
 			makeStatic = true;
@@ -475,8 +474,8 @@ CBike::ProcessControl(void)
 		m_vecMoveSpeedAvg = (m_vecMoveSpeedAvg + m_vecMoveSpeed)/2.0f;
 		m_vecTurnSpeedAvg = (m_vecTurnSpeedAvg + m_vecTurnSpeed)/2.0f;
 
-		if(m_vecMoveSpeedAvg.MagnitudeSqr() <= sq(moveSpeedLimit*CTimer::GetTimeStep()) &&
-		   m_vecTurnSpeedAvg.MagnitudeSqr() <= sq(turnSpeedLimit*CTimer::GetTimeStep()) &&
+		if(glm::dot(m_vecMoveSpeedAvg, m_vecMoveSpeedAvg) <= sq(moveSpeedLimit*CTimer::GetTimeStep()) &&
+		   glm::dot(m_vecTurnSpeedAvg, m_vecTurnSpeedAvg) <= sq(turnSpeedLimit*CTimer::GetTimeStep()) &&
 		   m_fDistanceTravelled < distanceLimit ||
 		   makeStatic){
 			m_nStaticFrames++;
@@ -488,8 +487,8 @@ CBike::ProcessControl(void)
 
 					skipPhysics = true;
 
-					m_vecMoveSpeed = CVector(0.0f, 0.0f, 0.0f);
-					m_vecTurnSpeed = CVector(0.0f, 0.0f, 0.0f);
+					m_vecMoveSpeed = glm::vec3(0.0f, 0.0f, 0.0f);
+					m_vecTurnSpeed = glm::vec3(0.0f, 0.0f, 0.0f);
 				}
 		}else
 			m_nStaticFrames = 0;
@@ -524,9 +523,9 @@ CBike::ProcessControl(void)
 		m_nDamagePieceType = 0;
 		m_fDamageImpulse = 0.0f;
 		m_pDamageEntity = nil;
-		m_vecTurnFriction = CVector(0.0f, 0.0f, 0.0f);
-		m_vecMoveFriction = CVector(0.0f, 0.0f, 0.0f);
-// missing. BUG?
+		m_vecTurnFriction = glm::vec3(0.0f, 0.0f, 0.0f);
+		m_vecMoveFriction = glm::vec3(0.0f, 0.0f, 0.0f);
+		// missing. BUG?
 //		m_fTireTemperature = 1.0f;
 
 		if(bIsStanding && m_fWheelAngle < DEGTORAD(20.0f))
@@ -697,7 +696,7 @@ CBike::ProcessControl(void)
 				springDirections[3] = -normal;
 		}
 
-		// game has dead code here if m_vecMoveSpeed.Magnitude() < 0.01f
+		// game has dead code here if glm::length(m_vecMoveSpeed) < 0.01f
 
 		// dampen springs
 		for(i = 0; i < 4; i++)
@@ -809,7 +808,7 @@ CBike::ProcessControl(void)
 
 		static float fThrust;
 		static tWheelState WheelState[2];
-		CVector initialMoveSpeed = m_vecMoveSpeed;
+		glm::vec3 initialMoveSpeed = m_vecMoveSpeed;
 		bool rearWheelsFirst = !!(pHandling->Flags & HANDLING_REARWHEEL_1ST);
 
 		// Process front wheel - first try
@@ -1140,7 +1139,7 @@ CBike::ProcessControl(void)
 
 	float suspShake = 0.0f;
 	float surfShake = 0.0f;
-	float speedsq = m_vecMoveSpeed.MagnitudeSqr();
+	float speedsq = glm::dot(m_vecMoveSpeed, m_vecMoveSpeed);
 	for(i = 0; i < 4; i++){
 		float suspChange = m_aSuspensionSpringRatioPrev[i] - m_aSuspensionSpringRatio[i];
 		if(suspChange > 0.3f && (i == BIKESUSP_F1 || i == BIKESUSP_R1) && speedsq > 0.04f){
@@ -1183,7 +1182,7 @@ CBike::ProcessControl(void)
 	// Shake pad
 
 	if((suspShake > 0.0f || surfShake > 0.0f) && GetStatus() == STATUS_PLAYER){
-		float speed = m_vecMoveSpeed.MagnitudeSqr();
+		float speed = glm::dot(m_vecMoveSpeed, m_vecMoveSpeed);
 		if(speed > sq(0.1f)){
 			speed = Sqrt(speed);
 			if(suspShake > 0.0f){
@@ -1203,16 +1202,16 @@ CBike::ProcessControl(void)
 		CCarCtrl::ScanForPedDanger(this);
 
 	if(bInfiniteMass){
-		m_vecMoveSpeed = CVector(0.0f, 0.0f, 0.0f);
-		m_vecTurnSpeed = CVector(0.0f, 0.0f, 0.0f);
-		m_vecMoveFriction = CVector(0.0f, 0.0f, 0.0f);
-		m_vecTurnFriction = CVector(0.0f, 0.0f, 0.0f);
+		m_vecMoveSpeed = glm::vec3(0.0f, 0.0f, 0.0f);
+		m_vecTurnSpeed = glm::vec3(0.0f, 0.0f, 0.0f);
+		m_vecMoveFriction = glm::vec3(0.0f, 0.0f, 0.0f);
+		m_vecTurnFriction = glm::vec3(0.0f, 0.0f, 0.0f);
 	}else if(!skipPhysics &&
 	         (acceleration == 0.0f && brake == 0.0f || GetStatus() == STATUS_WRECKED)){
 		if(Abs(m_vecMoveSpeed.x) < 0.005f &&
 		   Abs(m_vecMoveSpeed.y) < 0.005f &&
 		   Abs(m_vecMoveSpeed.z) < 0.005f){
-			m_vecMoveSpeed = CVector(0.0f, 0.0f, 0.0f);
+			m_vecMoveSpeed = glm::vec3(0.0f, 0.0f, 0.0f);
 			m_vecTurnSpeed.z = 0.0f;
 		}
 	}
@@ -1241,7 +1240,7 @@ CBike::ProcessControl(void)
 				else if(wheelie < -0.08f)
 					// above wheelie angle
 					wheelie = Min(-0.15f - wheelie, 0.0f);
-				float wheelieStab = pBikeHandling->fWheelieStabMult * Min(m_vecMoveSpeed.Magnitude(), 0.1f) * wheelie;
+				float wheelieStab = pBikeHandling->fWheelieStabMult * Min(glm::length(m_vecMoveSpeed), 0.1f) * wheelie;
 				ApplyTurnForce(0.5f*CTimer::GetTimeStep()*wheelieStab*m_fTurnMass*GetUp(), worldCOM+GetForward());
 				ApplyTurnForce(0.5f*CTimer::GetTimeStep()*m_fWheelAngle*pBikeHandling->fWheelieSteer*m_fTurnMass*GetRight(), worldCOM+GetForward());
 			}else if(m_aWheelTimer[BIKESUSP_R1] == 0.0f && m_aWheelTimer[BIKESUSP_R2] == 0.0f && GetForward().z < 0.0 &&
@@ -1254,7 +1253,7 @@ CBike::ProcessControl(void)
 				else if(stoppie < -0.15f)
 					// above stoppie angle
 					stoppie = Min(-0.3f - stoppie, 0.0f);
-				float speed = m_vecMoveSpeed.Magnitude();
+				float speed = glm::length(m_vecMoveSpeed);
 				float stoppieStab = pBikeHandling->fStoppieStabMult * Min(speed, 0.1f) * stoppie;
 				ApplyTurnForce(0.5f*CTimer::GetTimeStep()*stoppieStab*m_fTurnMass*GetUp(), worldCOM+GetForward());
 				ApplyTurnForce(0.5f*Min(5.0f*speed,1.0f)*CTimer::GetTimeStep()*m_fWheelAngle*pBikeHandling->fWheelieSteer*m_fTurnMass*GetRight(), worldCOM+GetForward());
@@ -1477,7 +1476,7 @@ CBike::PreRender(void)
 		if(this == FindPlayerVehicle() && !alarmOff){
 			CPointLights::AddLight(CPointLights::LIGHT_DIRECTIONAL, GetPosition(), GetForward(),
 				20.0f, 1.0f, 1.0f, 1.0f,
-				FindPlayerVehicle()->m_vecMoveSpeed.MagnitudeSqr2D() < sq(0.45f) ? CPointLights::FOG_NORMAL : CPointLights::FOG_NONE,
+				glm::dot(FindPlayerVehicle()->m_vecMoveSpeed, FindPlayerVehicle()->m_vecMoveSpeed) < sq(0.45f) ? CPointLights::FOG_NORMAL : CPointLights::FOG_NONE,
 				false);
 			CVector pos = GetPosition() - 4.0f*GetForward();
 			if(m_fBrakePedal > 0.0f)
@@ -1533,13 +1532,13 @@ CBike::PreRender(void)
 		static float speedSq;
 		// Sparks for friction of burst wheels
 		if(m_wheelStatus[i] == WHEEL_STATUS_BURST && m_aSuspensionSpringRatioPrev[susp] < 1.0f &&
-		   (speedSq = m_vecMoveSpeed.MagnitudeSqr(), speedSq > SQR(0.1f)) &&
+		   (speedSq = glm::dot(m_vecMoveSpeed, m_vecMoveSpeed), speedSq > SQR(0.1f)) &&
 		   m_aWheelColPoints[susp].surfaceB != SURFACE_GRASS &&
 		   m_aWheelColPoints[susp].surfaceB != SURFACE_MUD_DRY &&
 		   m_aWheelColPoints[susp].surfaceB != SURFACE_SAND &&
 		   m_aWheelColPoints[susp].surfaceB != SURFACE_SAND_BEACH){
 			CVector normalSpeed = m_aWheelColPoints[susp].normal * DotProduct(m_aWheelColPoints[susp].normal, m_vecMoveSpeed);
-			CVector frictionSpeed = m_vecMoveSpeed - normalSpeed;
+			CVector frictionSpeed = toVec(m_vecMoveSpeed) - normalSpeed;
 			CVector sparkDir = 0.25f*frictionSpeed;
 			CParticle::AddParticle(PARTICLE_SPARK_SMALL, m_aWheelColPoints[susp].point, sparkDir);
 
@@ -1935,7 +1934,7 @@ CBike::ProcessControlInputs(uint8 pad)
 		FindPlayerPed()->KeepAreaAroundPlayerClear();
 
 		// slow down car immediately
-		speed = m_vecMoveSpeed.Magnitude();
+		speed = glm::length(m_vecMoveSpeed);
 		if(speed > 0.28f)
 			m_vecMoveSpeed *= 0.28f/speed;
 	}
@@ -2195,7 +2194,7 @@ CBike::AddDamagedVehicleParticles(void)
 	if(m_fHealth >= 650.0f)
 		return;
 
-	CVector direction = 0.5f*m_vecMoveSpeed;
+	CVector direction = toVec(0.5f*m_vecMoveSpeed);
 	CVector damagePos = ((CVehicleModelInfo*)CModelInfo::GetModelInfo(GetModelIndex()))->GetFrontSeatPosn();
 
 	damagePos.z -= 0.4f;
@@ -2226,7 +2225,7 @@ CBike::AddDamagedVehicleParticles(void)
 		if(TheCamera.GetLookDirection() != LOOKING_FORWARD){
 			CParticle::AddParticle(PARTICLE_ENGINE_STEAM, damagePos, direction + 0.08f*m_leanMatrix.GetRight(), nil, 0.1f, 0, 0, 0, 1000);
 		}else if(((CTimer::GetFrameCounter() + m_randomSeed) & 1) == 0){
-			direction = 0.8f*m_vecMoveSpeed;
+			direction = toVec(0.8f*m_vecMoveSpeed);
 			CParticle::AddParticle(PARTICLE_ENGINE_STEAM, damagePos, direction + 0.07f*m_leanMatrix.GetRight(), nil, 0.1f, 0, 0, 0, 1000);
 		}
 	}else if(((CTimer::GetFrameCounter() + m_randomSeed) & 3) == 0 ||
@@ -2289,7 +2288,7 @@ CBike::AddWheelDirtAndWater(CColPoint *colpoint, uint32 belowEffectSpeed)
 		for(i = 0; i < 1; i++){
 			dir.z = CGeneral::GetRandomNumberInRange(0.02f, 0.055f);
 			CParticle::AddParticle(PARTICLE_SAND, colpoint->point, dir, nil,
-				0.8f*m_vecMoveSpeed.Magnitude(), sandCol);
+				0.8f*glm::length(m_vecMoveSpeed), sandCol);
 		}
 		return 0;
 	default:
@@ -2469,7 +2468,7 @@ CBike::BurstTyre(uint8 wheel, bool applyForces)
 			if(wheel == CAR_PIECE_WHEEL_LF && (m_aSuspensionSpringRatioPrev[BIKESUSP_F1] < 1.0f || m_aSuspensionSpringRatioPrev[BIKESUSP_F2] < 1.0f) ||
 			   wheel == CAR_PIECE_WHEEL_LR && (m_aSuspensionSpringRatioPrev[BIKESUSP_R1] < 1.0f || m_aSuspensionSpringRatioPrev[BIKESUSP_R2] < 1.0f)){
 #endif
-				float speedSq = m_vecMoveSpeed.MagnitudeSqr();
+				float speedSq = glm::dot(m_vecMoveSpeed, m_vecMoveSpeed);
 				if(speedSq > fBikeBurstFallSpeed &&
 				   (GetStatus() != STATUS_PLAYER || speedSq > fBikeBurstFallSpeedPlayer)){
 #ifdef FIX_SIGNIFICANT_BUGS
@@ -2634,14 +2633,14 @@ CBike::KnockOffRider(eWeaponType weapon, uint8 direction, CPed *ped, bool bGetBa
 		switch(direction){
 		case 0:
 			anim = ANIM_STD_BIKE_FALLBACK;
-			ped->m_vecMoveSpeed = CVector(0.0f, 0.0f, 0.1f);
-			if(m_vecMoveSpeed.MagnitudeSqr() < SQR(0.3f))
+			ped->m_vecMoveSpeed = glm::vec3(0.0f, 0.0f, 0.1f);
+			if(glm::dot(m_vecMoveSpeed, m_vecMoveSpeed) < SQR(0.3f))
 				ped->ApplyMoveForce(5.0f*GetUp() - 6.0f*GetForward());
 			ped->m_pCollidingEntity = this;
 			break;
 		case 1:
 		case 2:
-			if(m_vecMoveSpeed.MagnitudeSqr() > SQR(0.3f)){
+			if(glm::dot(m_vecMoveSpeed, m_vecMoveSpeed) > SQR(0.3f)){
 				anim = ANIM_STD_HIGHIMPACT_LEFT;
 				ped->m_vecMoveSpeed = 0.3f*m_vecMoveSpeed;
 				ped->ApplyMoveForce(5.0f*GetUp() + 6.0f*GetRight());
@@ -2654,7 +2653,7 @@ CBike::KnockOffRider(eWeaponType weapon, uint8 direction, CPed *ped, bool bGetBa
 			//ped->m_pCollidingEntity = this;
 			break;
 		case 3:
-			if(m_vecMoveSpeed.MagnitudeSqr() > SQR(0.3f)){
+			if(glm::dot(m_vecMoveSpeed, m_vecMoveSpeed) > SQR(0.3f)){
 				anim = ANIM_STD_HIGHIMPACT_RIGHT;
 				ped->m_vecMoveSpeed = 0.3f*m_vecMoveSpeed;
 				ped->ApplyMoveForce(5.0f*GetUp() - 6.0f*GetRight());
@@ -2680,11 +2679,11 @@ CBike::KnockOffRider(eWeaponType weapon, uint8 direction, CPed *ped, bool bGetBa
 		color.blue = (0.5f * CTimeCycle::GetDirectionalBlue() + CTimeCycle::GetAmbientBlue_Obj())*0.45f*255;
 		color.alpha = CGeneral::GetRandomNumberInRange(48, 96);
 		DMAudio.PlayOneShot(m_audioEntityId, SOUND_SPLASH, 0.0f);
-		CVector splashPos = ped->GetPosition() + 2.2f*ped->m_vecMoveSpeed;
+		glm::vec3 splashPos = toVec3(ped->GetPosition()) + 2.2f*ped->m_vecMoveSpeed;
 		float waterZ = 0.0f;
 		if(CWaterLevel::GetWaterLevel(splashPos, &waterZ, false))
 			splashPos.z = waterZ;
-		CParticleObject::AddObject(POBJECT_PED_WATER_SPLASH, splashPos, CVector(0.0f, 0.0f, 0.1f),
+		CParticleObject::AddObject(POBJECT_PED_WATER_SPLASH, toVec(splashPos), toVec(glm::vec3(0.0f, 0.0f, 0.1f)),
 			0.0f, 200, color, true);
 		break;
 	}
@@ -2742,13 +2741,15 @@ CBike::KnockOffRider(eWeaponType weapon, uint8 direction, CPed *ped, bool bGetBa
 		ped->bIsStanding = false;
 	}
 
-	CEntity *ent = CWorld::TestSphereAgainstWorld(ped->GetPosition()+CVector(0.0f, 0.0, 0.5f), 0.4f, nil, true, false, false, false, false, false);
+	const auto vec3PedPosition = toVec3(ped->GetPosition()); 
+	CEntity *ent = CWorld::TestSphereAgainstWorld(vec3PedPosition + glm::vec3(0.0f, 0.0, 0.5f), 0.4f, nil, true, false, false, false, false, false);
+	if(ent == nil) ent = CWorld::TestSphereAgainstWorld(vec3PedPosition + glm::vec3(0.0f, 0.0, 0.8f), 0.4f, nil, true, false, false, false, false, false);
 	if(ent == nil)
-		ent = CWorld::TestSphereAgainstWorld(ped->GetPosition()+CVector(0.0f, 0.0, 0.8f), 0.4f, nil, true, false, false, false, false, false);
+		ent = CWorld::TestSphereAgainstWorld(vec3PedPosition + CTimer::GetTimeStep() * ped->m_vecMoveSpeed + glm::vec3(0.0f, 0.0, 0.5f), 0.4f, nil,
+		                                     true, false, false, false, false, false);
 	if(ent == nil)
-		ent = CWorld::TestSphereAgainstWorld(ped->GetPosition()+CTimer::GetTimeStep()*ped->m_vecMoveSpeed+CVector(0.0f, 0.0, 0.5f), 0.4f, nil, true, false, false, false, false, false);
-	if(ent == nil)
-		ent = CWorld::TestSphereAgainstWorld(ped->GetPosition()+CTimer::GetTimeStep()*ped->m_vecMoveSpeed+CVector(0.0f, 0.0, 0.8f), 0.4f, nil, true, false, false, false, false, false);
+		ent = CWorld::TestSphereAgainstWorld(vec3PedPosition + CTimer::GetTimeStep() * ped->m_vecMoveSpeed + glm::vec3(0.0f, 0.0, 0.8f), 0.4f, nil,
+		                                     true, false, false, false, false, false);
 	if(ent){
 		CColPoint point;
 		ent = nil;

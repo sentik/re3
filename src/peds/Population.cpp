@@ -412,7 +412,7 @@ CPopulation::PedCreationDistMultiplier()
 	if (!veh)
 		return 1.0f;
 
-	float vehSpeed = veh->m_vecMoveSpeed.Magnitude2D();
+	float vehSpeed =  glm::length(glm::vec2(veh->m_vecMoveSpeed));
 	return Clamp(vehSpeed - 0.1f + 1.0f, 1.0f, 1.5f);
 }
 
@@ -940,7 +940,7 @@ CPopulation::ConvertToRealObject(CDummyObject *dummy)
 		obj->bIsVisible = false;
 	} else if (obj->GetModelIndex() == MI_BUOY) {
 		obj->SetIsStatic(false);
-		obj->m_vecMoveSpeed = CVector(0.0f, 0.0f, -0.001f);
+		obj->m_vecMoveSpeed = glm::vec3(0.0f, 0.0f, -0.001f);
 		obj->bTouchingWater = true;
 		obj->AddToMovingList();
 	}

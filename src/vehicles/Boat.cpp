@@ -218,8 +218,8 @@ CBoat::ProcessControl(void)
 		m_fBrakePedal = 0.5f;
 		m_fGasPedal = 0.0f;
 		if((GetPosition() - FindPlayerCentreOfWorld_NoSniperShift()).Magnitude() > 150.0f){
-			m_vecMoveSpeed = CVector(0.0f, 0.0f, 0.0f);
-			m_vecTurnSpeed = CVector(0.0f, 0.0f, 0.0f);
+			m_vecMoveSpeed = glm::vec3(0.0f, 0.0f, 0.0f);
+			m_vecTurnSpeed = glm::vec3(0.0f, 0.0f, 0.0f);
 			return;
 		}
 		break;
@@ -266,38 +266,42 @@ CBoat::ProcessControl(void)
 	if(m_fHealth <= 460.0f && GetStatus() != STATUS_WRECKED &&
 	   Abs(GetPosition().x - TheCamera.GetPosition().x) < 200.0f &&
 	   Abs(GetPosition().y - TheCamera.GetPosition().y) < 200.0f){
-		float speedSq = m_vecMoveSpeed.MagnitudeSqr();
-		CVector smokeDir = 0.8f*m_vecMoveSpeed;
-		CVector smokePos;
+		float speedSq = glm::dot(m_vecMoveSpeed, m_vecMoveSpeed);
+		glm::vec3 smokeDir = 0.8f*m_vecMoveSpeed;
+		glm::vec3 smokePos;
 		switch(GetModelIndex()){
 		case MI_SPEEDER:
-			smokePos = CVector(0.4f, -2.4f, 0.8f);
-			smokeDir += 0.05f*GetRight();
+			smokePos = glm::vec3(0.4f, -2.4f, 0.8f);
+			smokeDir += toVec3(0.05f*GetRight());
 			smokeDir.z += 0.2f*m_vecMoveSpeed.z;
 			break;
 		case MI_REEFER:
-			smokePos = CVector(2.0f, -1.0f, 0.5f);
-			smokeDir += 0.07f*GetRight();
+			smokePos = glm::vec3(2.0f, -1.0f, 0.5f);
+			smokeDir += toVec3(0.07f * GetRight());
 			break;
 		case MI_PREDATOR:
 		default:
-			smokePos = CVector(-1.5f, -0.5f, 1.2f);
-			smokeDir += -0.08f*GetRight();
+			smokePos = glm::vec3(-1.5f, -0.5f, 1.2f);
+			smokeDir += toVec3(- 0.08f * GetRight());
 			break;
 		}
 
-		smokePos = GetMatrix() * smokePos;
+		smokePos = toVec3(GetMatrix() * toVec(smokePos));
 
 		// On fire
 		if(m_fHealth < 250.0f){
-			CParticle::AddParticle(PARTICLE_CARFLAME, smokePos,
-				CVector(0.0f, 0.0f, CGeneral::GetRandomNumberInRange(2.25f/200.0f, 0.09f)),
+			CParticle::AddParticle(
+				PARTICLE_CARFLAME,
+				toVec(smokePos)
+				, toVec(glm::vec3(0.0f)),
+				nullptr,
+				CGeneral::GetRandomNumberInRange(2.25f / 200.0f, 0.09f),
 				nil, 0.9f);
-			CVector smokePos2 = smokePos;
+			glm::vec3 smokePos2 = smokePos;
 			smokePos2.x += CGeneral::GetRandomNumberInRange(-2.25f/4.0f, 2.25f/4.0f);
 			smokePos2.y += CGeneral::GetRandomNumberInRange(-2.25f/4.0f, 2.25f/4.0f);
 			smokePos2.z += CGeneral::GetRandomNumberInRange(2.25f/4.0f, 2.25f);
-			CParticle::AddParticle(PARTICLE_ENGINE_SMOKE2, smokePos2, CVector(0.0f, 0.0f, 0.0f));
+			CParticle::AddParticle(PARTICLE_ENGINE_SMOKE2, toVec(smokePos2), toVec(glm::vec3(0.0f, 0.0f, 0.0f)));
 
 			m_fDamage += CTimer::GetTimeStepInMilliseconds();
 			if(m_fDamage > 5000.0f)
@@ -305,9 +309,8 @@ CBoat::ProcessControl(void)
 		}
 
 		if(speedSq < 0.25f && (CTimer::GetFrameCounter() + m_randomSeed) & 1)
-			CParticle::AddParticle(PARTICLE_ENGINE_STEAM, smokePos, smokeDir);
-		if(speedSq < 0.25f && m_fHealth <= 390.0f)
-			CParticle::AddParticle(PARTICLE_ENGINE_SMOKE, smokePos, 1.25f*smokeDir);
+			CParticle::AddParticle(PARTICLE_ENGINE_STEAM, toVec(smokePos), toVec(smokeDir));
+		if(speedSq < 0.25f && m_fHealth <= 390.0f) CParticle::AddParticle(PARTICLE_ENGINE_SMOKE, toVec(smokePos), toVec(1.25f * smokeDir));
 	}
 
 	bool bSeparateTurnForce = bHasHitWall;
@@ -363,7 +366,8 @@ CBoat::ProcessControl(void)
 			}
 
 		if(!onLand && bBoatInWater && GetUp().z > 0.0f){
-			float impulse = m_vecMoveSpeed.MagnitudeSqr()*pBoatHandling->fAqPlaneForce*buoyanceImpulse.z*CTimer::GetTimeStep()*0.5f;
+			float impulse =
+			    glm::dot(m_vecMoveSpeed, m_vecMoveSpeed) * pBoatHandling->fAqPlaneForce * buoyanceImpulse.z * CTimer::GetTimeStep() * 0.5f;
 			if(GetModelIndex() == MI_SKIMMER)
 				impulse *= 1.0f + m_fGasPedal;
 			else if(m_fGasPedal > 0.05f)
@@ -377,7 +381,7 @@ CBoat::ProcessControl(void)
 
 		// Handle boat moving forward
 		float fwdSpeed = 1.0f;
-		if(Abs(m_fGasPedal) > 0.05f || (fwdSpeed = m_vecMoveSpeed.Magnitude2D()) > 0.01f){
+		if(Abs(m_fGasPedal) > 0.05f || (fwdSpeed = glm::length(glm::vec2(m_vecMoveSpeed))) > 0.01f){
 			if(bBoatInWater && fwdSpeed > 0.05f)
 				AddWakePoint(GetPosition());
 
@@ -517,7 +521,7 @@ CBoat::ProcessControl(void)
 			m_vecTurnSpeed.y *= fy;
 			m_vecTurnSpeed.z *= fz;
 			float forceUp = (magic - 1.0f) * m_vecTurnSpeed.x * m_fTurnMass;
-			m_vecTurnSpeed = Multiply3x3(GetMatrix(), m_vecTurnSpeed);	// back to world
+			m_vecTurnSpeed = toVec3(Multiply3x3(GetMatrix(), m_vecTurnSpeed));	// back to world
 			CVector com = Multiply3x3(GetMatrix(), m_vecCentreOfMass);
 			ApplyTurnForce(forceUp*GetUp(), com + GetForward());
 		}
@@ -531,7 +535,7 @@ CBoat::ProcessControl(void)
 				DMAudio.PlayOneShot(m_audioEntityId, SOUND_CAR_SPLASH, splashVol);
 
 			if(m_nDeltaVolumeUnderWater > 200){
-				float speedUp = m_vecMoveSpeed.MagnitudeSqr() * m_nDeltaVolumeUnderWater * 0.001f;
+				float speedUp = glm::dot(m_vecMoveSpeed, m_vecMoveSpeed) * m_nDeltaVolumeUnderWater * 0.001f;
 				if(speedUp + m_vecMoveSpeed.z > pHandling->fBrakeDeceleration)
 					speedUp = pHandling->fBrakeDeceleration - m_vecMoveSpeed.z;
 				if(speedUp < 0.0f) speedUp = 0.0f;
@@ -545,7 +549,7 @@ CBoat::ProcessControl(void)
 		}
 
 		// Splashes
-		float speed = m_vecMoveSpeed.Magnitude();
+		float speed = glm::length(m_vecMoveSpeed);
 		if(speed > 0.05f && GetUp().x > 0.0f && !TheCamera.GetLookingForwardFirstPerson() && IsVisible() &&
 		   (AutoPilot.m_nCarMission != MISSION_CRUISE || (CTimer::GetFrameCounter()&2) == 0)){
 			CVector splashPos, splashDir;
@@ -555,54 +559,54 @@ CBoat::ProcessControl(void)
 			case MI_RIO:
 				splashSize = speed;
 				front = 0.9f * GetColModel()->boundingBox.max.y;
-				splashDir = -0.5f * m_vecMoveSpeed;
+				splashDir = toVec(-0.5f * m_vecMoveSpeed);
 				splashDir.z += 0.25f*speed;
 				splashDir += 0.35f*speed*GetRight();
-				splashPos = GetPosition() + 1.85f*GetRight() + front*GetForward();
+				splashPos = (GetPosition() + 1.85f*GetRight() + front*GetForward());
 				splashPos.z += 0.5f;
 				break;
 			case MI_SQUALO:
 				splashSize = speed;
 				front = 0.75f * GetColModel()->boundingBox.max.y;
-				splashDir = -0.125f * m_vecMoveSpeed;
+				splashDir = toVec( - 0.125f * m_vecMoveSpeed);
 				splashDir.z += 0.15f*speed;
 				splashDir += 0.25f*speed*GetRight();
-				splashPos = GetPosition() + m_vecBuoyancePoint + 0.5f*GetRight() + front*GetForward();
+				splashPos = (GetPosition() + m_vecBuoyancePoint + 0.5f*GetRight() + front*GetForward());
 				splashPos.z += 0.5f;
 				break;
 			case MI_REEFER:
 				splashSize = speed;
 				front = 0.75f * GetColModel()->boundingBox.max.y;
-				splashDir = -0.5f * m_vecMoveSpeed;
+				splashDir = toVec(- 0.5f * m_vecMoveSpeed);
 				splashDir.z += 0.15f*speed;
 				splashDir += 0.5f*speed*GetRight();
-				splashPos = GetPosition() + m_vecBuoyancePoint + 1.3f*GetRight() + front*GetForward();
+				splashPos = (GetPosition() + m_vecBuoyancePoint + 1.3f*GetRight() + front*GetForward());
 				break;
 			case MI_COASTG:
 				splashSize = 0.25f*speed;
 				front = 0.8f * GetColModel()->boundingBox.max.y;
-				splashDir = 0.165f * m_vecMoveSpeed;
+				splashDir = toVec(0.165f * m_vecMoveSpeed);
 				splashDir.z += 0.25f*speed;
 				splashDir += 0.15f*speed*GetRight();
-				splashPos = GetPosition() + 0.65f*GetRight() + front*GetForward();
+				splashPos = (GetPosition() + 0.65f*GetRight() + front*GetForward());
 				splashPos.z += 0.5f;
 				break;
 			case MI_DINGHY:
 				splashSize = 0.25f*speed;
 				front = 0.9f * GetColModel()->boundingBox.max.y;
-				splashDir = 0.35f * m_vecMoveSpeed;
+				splashDir = toVec(0.35f * m_vecMoveSpeed);
 				splashDir.z += 0.25f*speed;
 				splashDir += 0.25f*speed*GetRight();
-				splashPos = GetPosition() + 0.6f*GetRight() + front*GetForward();
+				splashPos = (GetPosition() + 0.6f*GetRight() + front*GetForward());
 				splashPos.z += 0.5f;
 				break;
 			default:
 				splashSize = speed;
 				front = 0.9f * GetColModel()->boundingBox.max.y;
-				splashDir = -0.5f * m_vecMoveSpeed;
+				splashDir = toVec(- 0.5f * m_vecMoveSpeed);
 				splashDir.z += 0.25f*speed;
 				splashDir += 0.35f*speed*GetRight();
-				splashPos = GetPosition() + m_vecBuoyancePoint + 0.5f*GetRight() + front*GetForward();
+				splashPos = (GetPosition() + m_vecBuoyancePoint + 0.5f*GetRight() + front*GetForward());
 				break;
 			}
 			if(splashSize > 0.75f) splashSize = 0.75f;
@@ -613,7 +617,7 @@ CBoat::ProcessControl(void)
 			splashDir.z += 0.0003f*m_nDeltaVolumeUnderWater;
 			CWaterLevel::GetWaterLevel(splashPos, &waterLevel, true);
 			if(splashPos.z-waterLevel < 3.0f &&
-			   CVisibilityPlugins::GetDistanceSquaredFromCamera(&splashPos) < SQR(70.0f * TheCamera.GenerationDistMultiplier)){
+			   CVisibilityPlugins::GetDistanceSquaredFromCamera(&splashPos) < SQR(70.0f * TheCamera.GenerationDistMultiplier)) {
 				splashPos.z = waterLevel + 0.1f;
 				CParticle::AddParticle(PARTICLE_CAR_SPLASH, splashPos, 0.75f*splashDir, nil, splashSize+0.1f,  splashColor,
 					CGeneral::GetRandomNumberInRange(0.0f, 10.0f), CGeneral::GetRandomNumberInRange(0.0f, 90.0f),
@@ -625,44 +629,44 @@ CBoat::ProcessControl(void)
 
 			switch(GetModelIndex()){
 			case MI_RIO:
-				splashDir = -0.5f * m_vecMoveSpeed;
+				splashDir = toVec( - 0.5f * m_vecMoveSpeed);
 				splashDir.z += 0.25f*speed;
 				splashDir -= 0.35f*speed*GetRight();
-				splashPos = GetPosition() - 1.85f*GetRight() + front*GetForward();
+				splashPos = (GetPosition() - 1.85f*GetRight() + front*GetForward());
 				splashPos.z += 0.5f;
 				break;
 			case MI_SQUALO:
-				splashDir = -0.125f * m_vecMoveSpeed;
+				splashDir = toVec( - 0.125f * m_vecMoveSpeed);
 				splashDir.z += 0.15f*speed;
 				splashDir -= 0.25f*speed*GetRight();
-				splashPos = GetPosition() + m_vecBuoyancePoint - 0.5f*GetRight() + front*GetForward();
+				splashPos = (GetPosition() + m_vecBuoyancePoint - 0.5f*GetRight() + front*GetForward());
 				splashPos.z += 0.5f;
 				break;
 			case MI_REEFER:
-				splashDir = -0.5f * m_vecMoveSpeed;
+				splashDir = toVec(- 0.5f * m_vecMoveSpeed);
 				splashDir.z += 0.15f*speed;
 				splashDir -= 0.5f*speed*GetRight();
-				splashPos = GetPosition() + m_vecBuoyancePoint - 1.3f*GetRight() + front*GetForward();
+				splashPos = (GetPosition() + m_vecBuoyancePoint - 1.3f*GetRight() + front*GetForward());
 				break;
 			case MI_COASTG:
-				splashDir = 0.165f * m_vecMoveSpeed;
+				splashDir = toVec(0.165f * m_vecMoveSpeed);
 				splashDir.z += 0.25f*speed;
 				splashDir -= 0.15f*speed*GetRight();
-				splashPos = GetPosition() - 0.65f*GetRight() + front*GetForward();
+				splashPos = (GetPosition() - 0.65f * GetRight() + front * GetForward());
 				splashPos.z += 0.5f;
 				break;
 			case MI_DINGHY:
-				splashDir = 0.35f * m_vecMoveSpeed;
+				splashDir = toVec(0.35f * m_vecMoveSpeed);
 				splashDir.z += 0.25f*speed;
 				splashDir -= 0.25f*speed*GetRight();
-				splashPos = GetPosition() - 0.6f*GetRight() + front*GetForward();
+				splashPos = (GetPosition() - 0.6f * GetRight() + front * GetForward());
 				splashPos.z += 0.5f;
 				break;
 			default:
-				splashDir = -0.5f * m_vecMoveSpeed;
+				splashDir = toVec(- 0.5f * m_vecMoveSpeed);
 				splashDir.z += 0.25f*speed;
 				splashDir -= 0.35f*speed*GetRight();
-				splashPos = GetPosition() + m_vecBuoyancePoint - 0.5f*GetRight() + front*GetForward();
+				splashPos = (GetPosition() + m_vecBuoyancePoint - 0.5f * GetRight() + front * GetForward());
 				break;
 			}
 			if(AutoPilot.m_nCarMission == MISSION_CRUISE)
@@ -809,7 +813,7 @@ CBoat::ApplyWaterResistance(void)
 	m_vecMoveSpeed.y *= fy;
 	m_vecMoveSpeed.z *= fz;
 	float force = (fy - 1.0f) * m_vecMoveSpeed.y * m_fMass;
-	m_vecMoveSpeed = Multiply3x3(GetMatrix(), m_vecMoveSpeed);	// back to world
+	m_vecMoveSpeed = toVec3(Multiply3x3(GetMatrix(), m_vecMoveSpeed)); // back to world
 
 	ApplyTurnForce(force*GetForward(), -GetUp());
 
@@ -1079,8 +1083,8 @@ CBoat::PreRender(void)
 			matrix.Translate(pos);
 			matrix.UpdateRW();
 
-			CVector wind  = CVector(0.707f, 0.707f, 0.0f) * (CWeather::Wind + 0.15f)*0.4f;
-			m_fMovingRotation += (m_vecMoveSpeed + wind).Magnitude()*CTimer::GetTimeStep();
+			glm::vec3 wind = glm::vec3(0.707f, 0.707f, 0.0f) * (CWeather::Wind + 0.15f) * 0.4f;
+			m_fMovingRotation += glm::length(m_vecMoveSpeed + wind) * CTimer::GetTimeStep();
 		}
 	}else if(GetModelIndex() == MI_PREDATOR || GetModelIndex() == MI_REEFER){
 		if (m_aBoatNodes[BOAT_MOVING] != nil) {

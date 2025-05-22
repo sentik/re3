@@ -795,7 +795,7 @@ void CGarage::Update()
 				else {
 					if (HasCraigCollectedThisCar(FindPlayerVehicle()->GetModelIndex()))
 						CGarages::TriggerMessage("GA_20", -1, 5000, -1); // We got more of these than we can shift. Sorry man, no deal.
-					else if (FindPlayerSpeed().Magnitude() < MAX_SPEED_TO_SHOW_COLLECTED_MESSAGE)
+					else if (glm::length(FindPlayerSpeed()) < MAX_SPEED_TO_SHOW_COLLECTED_MESSAGE)
 						CGarages::TriggerMessage("GA_19", -1, 5000, -1); // We're not interested in that model.
 				}
 			}

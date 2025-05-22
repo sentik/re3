@@ -3364,8 +3364,8 @@ CWaterLevel::CreateBeachToy(CVector const &vec, eBeachToy beachtoy)
 	if (toy) {
 		toy->SetPosition(vec);
 		toy->GetMatrix().UpdateRW();
-		toy->m_vecMoveSpeed = CVector(0.f, 0.f, 0.f);
-		toy->m_vecTurnSpeed = CVector(0.f, 0.f, 0.f);
+		toy->m_vecMoveSpeed = glm::vec3(0.f, 0.f, 0.f);
+		toy->m_vecTurnSpeed = glm::vec3(0.f, 0.f, 0.f);
 		toy->ObjectCreatedBy = TEMP_OBJECT;
 		toy->bIsStatic = isStatic;
 		CObject::nNoTempObjects++;

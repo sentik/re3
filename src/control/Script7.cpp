@@ -992,7 +992,7 @@ int8 CRunningScript::ProcessCommands1300To1399(int32 command)
 		CVehicle *pVehicle = CPools::GetVehiclePool()->GetAt(ScriptParams[0]);
 		if (CTimer::GetTimeInMilliseconds() > pVehicle->m_nGunFiringTime + 150) {
 			CWeapon gun(WEAPONTYPE_HELICANNON, 5000);
-			CVector worldGunPos = (pVehicle->GetMatrix() * vecHunterGunPos) + (CTimer::GetTimeStep() * pVehicle->m_vecMoveSpeed);
+			CVector worldGunPos = (pVehicle->GetMatrix() * vecHunterGunPos) + toVec((CTimer::GetTimeStep() * pVehicle->m_vecMoveSpeed));
 			gun.FireInstantHit(pVehicle, &worldGunPos);
 			gun.AddGunshell(pVehicle, worldGunPos, CVector2D(0.f, 0.1f), 0.025f);
 			DMAudio.PlayOneShot(pVehicle->m_audioEntityId, SOUND_WEAPON_SHOT_FIRED, 0.f);

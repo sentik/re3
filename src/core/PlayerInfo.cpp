@@ -323,7 +323,8 @@ CPlayerInfo::Process(void)
 								canJumpOff = veh->CanPedJumpOutCar();
 							}
 
-							if (canJumpOff || veh->m_vecMoveSpeed.Magnitude() < 0.1f) {
+							if(canJumpOff || glm::length(veh->m_vecMoveSpeed) < 0.1f)
+								{
 								if (!veh->bIsInWater)
 									m_pPed->SetObjective(OBJECTIVE_LEAVE_CAR, veh);
 
@@ -427,8 +428,8 @@ CPlayerInfo::Process(void)
 	}
 	if (!(CTimer::GetFrameCounter() & 31)) {
 		CVehicle *veh = FindPlayerVehicle();
-		if (veh && m_pPed->bInVehicle && veh->GetUp().z < 0.0f
-			&& veh->m_vecMoveSpeed.Magnitude() < 0.05f && (veh->IsCar() || veh->IsBoat()) && !veh->bIsInWater) {
+		if (veh && m_pPed->bInVehicle && veh->GetUp().z < 0.0f && glm::length(veh->m_vecMoveSpeed) < 0.05f && (veh->IsCar() || veh->IsBoat()) && !veh->bIsInWater)
+			{
 
 			if (veh->GetUp().z < -0.5f) {
 				m_nUpsideDownCounter += 2;
@@ -470,7 +471,7 @@ CPlayerInfo::Process(void)
 				CStats::DistanceTravelledByBoat += veh->m_fDistanceTravelled;
 
 			if (veh->GetVehicleAppearance() == VEHICLE_APPEARANCE_PLANE) {
-				if (veh->m_vecMoveSpeed.Magnitude() > 0.2f) {
+				if(glm::length(veh->m_vecMoveSpeed) > 0.2f) {
 					CStats::FlightTime += CTimer::GetTimeStep() * 16.f; // what a weird choice
 				}
 			}
@@ -663,14 +664,14 @@ FindPlayerCoors(void)
 		return ped->GetPosition();
 }
 
-const CVector &
+const glm::vec3 &
 FindPlayerSpeed(void)
 {
-#ifdef FIX_BUGS
-	static CVector vecTmpVector(0.0f, 0.0f, 0.0f);
+
+	static glm::vec3 vecTmpVector(0.0f, 0.0f, 0.0f);
 	if (CReplay::IsPlayingBack())
 		return vecTmpVector;
-#endif
+
 	CPlayerPed *ped = FindPlayerPed();
 	if(ped->InVehicle())
 		return ped->m_pMyVehicle->m_vecMoveSpeed;

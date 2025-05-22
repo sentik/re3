@@ -128,7 +128,13 @@ public:
 	static void    RemoveIsolatedWater();
 
 	static bool    GetWaterLevel(float fX, float fY, float fZ, float *pfOutLevel, bool bDontCheckZ);
-	static bool    GetWaterLevel(CVector coors, float *pfOutLevel, bool bDontCheckZ) { return GetWaterLevel(coors.x, coors.y, coors.z, pfOutLevel, bDontCheckZ); }
+	static bool    GetWaterLevel(CVector coors, float *pfOutLevel, bool bDontCheckZ) {
+		return GetWaterLevel(coors.x, coors.y, coors.z, pfOutLevel, bDontCheckZ); 
+	}
+	static bool GetWaterLevel(glm::vec3 coors, float* pfOutLevel, bool bDontCheckZ) {
+	   		return GetWaterLevel(coors.x, coors.y, coors.z, pfOutLevel, bDontCheckZ); 
+
+	}
 	static bool    GetWaterLevelNoWaves(float fX, float fY, float fZ, float *pfOutLevel);
 	static float   GetWaterWavesOnly(short x, short y);	// unused
 	static CVector GetWaterNormal(float fX, float fY);

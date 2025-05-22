@@ -188,7 +188,7 @@ CTrain::ProcessControl(void)
 	// Set speed
 	m_vecMoveSpeed = fwd*engineTrackSpeed[m_nWagonGroup]/60.0f;
 	m_fSpeed = engineTrackSpeed[m_nWagonGroup]/60.0f;
-	m_vecTurnSpeed = CVector(0.0f, 0.0f, 0.0f);
+	m_vecTurnSpeed = glm::vec3(0.0f, 0.0f, 0.0f);
 
 	if(engineTrackSpeed[m_nWagonGroup] > 0.001f){
 		SetStatus(STATUS_TRAIN_MOVING);

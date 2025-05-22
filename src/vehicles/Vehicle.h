@@ -337,6 +337,9 @@ public:
 	void ExtinguishCarFire(void);
 	void ProcessDelayedExplosion(void);
 	float ProcessWheelRotation(tWheelState state, const CVector &fwd, const CVector &speed, float radius);
+	float ProcessWheelRotation(tWheelState state, const CVector& fwd, const glm::vec3& speed, float radius) { 
+		return ProcessWheelRotation(state, fwd, toVec(speed), radius); 
+	}
 	int FindTyreNearestPoint(float x, float y);
 	bool IsLawEnforcementVehicle(void);
 	void ChangeLawEnforcerState(uint8 enable);

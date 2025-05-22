@@ -137,7 +137,7 @@ CCarCtrl::GenerateOneRandomCar()
 	bool bTopDownCamera = false;
 	CPlayerInfo* pPlayer = &CWorld::Players[CWorld::PlayerInFocus];
 	CVector vecTargetPos = FindPlayerCentreOfWorld(CWorld::PlayerInFocus);
-	CVector2D vecPlayerSpeed = FindPlayerSpeed();
+	glm::vec2 vecPlayerSpeed = FindPlayerSpeed();
 	CZoneInfo zone;
 	CTheZones::GetZoneInfoForTimeOfDay(&vecTargetPos, &zone);
 	pPlayer->m_nTrafficMultiplier = pPlayer->m_fRoadDensity * zone.carDensity;
@@ -573,7 +573,7 @@ CCarCtrl::GenerateOneRandomCar()
 		finalPosition.z = groundZ + pVehicle->GetHeightAboveRoad();
 	pVehicle->SetPosition(finalPosition);
 	pVehicle->SetMoveSpeed(directionIncludingCurve / GAME_SPEED_TO_CARAI_SPEED);
-	CVector2D speedDifferenceWithTarget = (CVector2D)pVehicle->GetMoveSpeed() - vecPlayerSpeed;
+	CVector2D speedDifferenceWithTarget = (CVector2D)pVehicle->GetMoveSpeed() - CVector2D(vecPlayerSpeed.x, vecPlayerSpeed.y);
 	CVector2D distanceToTarget = positionIncludingCurve - vecTargetPos;
 	switch (carClass) {
 	case COPS:
@@ -2539,13 +2539,13 @@ void CCarCtrl::SteerAICarBlockingPlayerForwardAndBack(CVehicle* pVehicle, float*
 {
 	*pSwerve = 0.0f;
 	*pHandbrake = false;
-	CVector player = FindPlayerSpeed() + 0.1f * FindPlayerEntity()->GetForward();
+	glm::vec3 player = FindPlayerSpeed() + 0.1f * toVec3(FindPlayerEntity()->GetForward());
 	player.z = 0.0f;
-	CVector right(pVehicle->GetRight().x, pVehicle->GetRight().y, 0.0f);
-	right.Normalise();
-	CVector forward(pVehicle->GetForward().x, pVehicle->GetForward().y, 0.0f);
-	forward.Normalise();
-	float dpPlayerAndRight = DotProduct(player, right);
+	glm::vec3 right(pVehicle->GetRight().x, pVehicle->GetRight().y, 0.0f);
+	right = glm::normalize(right);
+	glm::vec3 forward(pVehicle->GetForward().x, pVehicle->GetForward().y, 0.0f);
+	forward = glm::normalize(forward);
+	float dpPlayerAndRight = glm::dot(player, right);
 	if (dpPlayerAndRight == 0.0f)
 		dpPlayerAndRight = 0.01f;
 	float dpDiffAndRight = -DotProduct((FindPlayerCoors() - pVehicle->GetPosition()), right) / dpPlayerAndRight;
@@ -2555,7 +2555,7 @@ void CCarCtrl::SteerAICarBlockingPlayerForwardAndBack(CVehicle* pVehicle, float*
 		return;
 	}
 	float dpSpeedAndForward = DotProduct(pVehicle->GetMoveSpeed(), forward);
-	float dpPlayerAndForward = DotProduct(player, forward);
+	float dpPlayerAndForward = glm::dot(player, forward);
 	float dpDiffAndForward = DotProduct((FindPlayerCoors() - pVehicle->GetPosition()), forward);
 	float multiplier = dpPlayerAndForward * dpDiffAndRight + dpDiffAndForward - dpSpeedAndForward * dpDiffAndRight;
 	if (multiplier > 0) {
@@ -2582,11 +2582,8 @@ void CCarCtrl::SteerAIBoatWithPhysicsHeadingForTarget(CVehicle* pVehicle, float 
 	float angleForward = CGeneral::GetATanOfXY(forward.x, forward.y);
 	float steerAngle = LimitRadianAngle(angleToTarget - angleForward);
 	steerAngle = Clamp(steerAngle, -DEFAULT_MAX_STEER_ANGLE, DEFAULT_MAX_STEER_ANGLE);
-#ifdef FIX_BUGS
 	float speedTarget = pVehicle->AutoPilot.GetCruiseSpeed();
-#else
-	float speedTarget = pVehicle->AutoPilot.m_nCruiseSpeed;
-#endif
+
 	float currentSpeed = pVehicle->GetMoveSpeed().Magnitude() * GAME_SPEED_TO_CARAI_SPEED;
 	float speedDiff = speedTarget - currentSpeed;
 	if (speedDiff <= 0.0f) {
@@ -2607,17 +2604,15 @@ void CCarCtrl::SteerAIBoatWithPhysicsAttackingPlayer(CVehicle* pVehicle, float* 
 {
 	float distanceToPlayer = (FindPlayerCoors() - pVehicle->GetPosition()).Magnitude();
 	float projection = Min(distanceToPlayer / 20.0f, 2.0f);
-	CVector2D forward = pVehicle->GetForward();
-	forward.Normalise();
-	CVector2D vecToProjection = FindPlayerCoors() + FindPlayerSpeed() * projection * GAME_SPEED_TO_CARAI_SPEED;
+	glm::vec2 forward = toVec3(pVehicle->GetForward());
+	forward = glm::normalize(forward);
+
+	glm::vec2 vecToProjection = toVec3(FindPlayerCoors()) + FindPlayerSpeed() * projection * GAME_SPEED_TO_CARAI_SPEED;
 	float angleToTarget = CGeneral::GetATanOfXY(vecToProjection.x - pVehicle->GetPosition().x, vecToProjection.y - pVehicle->GetPosition().y);
 	float angleForward = CGeneral::GetATanOfXY(forward.x, forward.y);
 	float steerAngle = LimitRadianAngle(angleToTarget - angleForward);
-#ifdef FIX_BUGS
 	float speedTarget = pVehicle->AutoPilot.GetCruiseSpeed();
-#else
-	float speedTarget = pVehicle->AutoPilot.m_nCruiseSpeed;
-#endif
+
 	float currentSpeed = pVehicle->GetMoveSpeed().Magnitude() * GAME_SPEED_TO_CARAI_SPEED;
 	float speedDiff = speedTarget - currentSpeed;
 	if (speedDiff <= 0.0f) {
@@ -2649,11 +2644,8 @@ void CCarCtrl::SteerAIHeliTowardsTargetCoors(CAutomobile* pHeli)
 		return;
 	CVector2D vecToTarget = pHeli->AutoPilot.m_vecDestinationCoors - pHeli->GetPosition();
 	float distanceToTarget = vecToTarget.Magnitude();
-#ifdef FIX_BUGS
 	float speed = pHeli->AutoPilot.GetCruiseSpeed() * 0.01f;
-#else
-	float speed = pHeli->AutoPilot.m_nCruiseSpeed * 0.01f;
-#endif
+
 	if (distanceToTarget <= 100.0f)
 	{
 		if (distanceToTarget > 75.0f)
@@ -2668,7 +2660,7 @@ void CCarCtrl::SteerAIHeliTowardsTargetCoors(CAutomobile* pHeli)
 	float resistance = Pow(0.997f, CTimer::GetTimeStep());
 	pHeli->m_vecMoveSpeed.x *= resistance;
 	pHeli->m_vecMoveSpeed.y *= resistance;
-	CVector2D vecSpeedDirection = vecAdvanceThisFrame - pHeli->m_vecMoveSpeed;
+	CVector2D vecSpeedDirection = vecAdvanceThisFrame - toVec(pHeli->m_vecMoveSpeed);
 	float vecSpeedChangeLength = vecSpeedDirection.Magnitude();
 	vecSpeedDirection.Normalise();
 	float changeMultiplier = 0.002f * CTimer::GetTimeStep();
@@ -2774,12 +2766,9 @@ void CCarCtrl::SteerAIPlaneTowardsTargetCoors(CAutomobile* pPlane)
 	pPlane->GetMatrix().GetUp() = up;
 	float newSplit = 1.0f - Pow(0.95f, CTimer::GetTimeStep());
 	float oldSplit = 1.0f - newSplit;
-#ifdef FIX_BUGS
-	pPlane->m_vecMoveSpeed = pPlane->m_vecMoveSpeed * oldSplit + pPlane->AutoPilot.GetCruiseSpeed() * 0.01f * forward * newSplit;
-#else
-	pPlane->m_vecMoveSpeed = pPlane->m_vecMoveSpeed * oldSplit + pPlane->AutoPilot.m_nCruiseSpeed * 0.01f * forward * newSplit;
-#endif
-	pPlane->m_vecTurnSpeed = CVector(0.0f, 0.0f, 0.0f);
+	pPlane->m_vecMoveSpeed = pPlane->m_vecMoveSpeed * oldSplit + pPlane->AutoPilot.GetCruiseSpeed() * 0.01f * toVec3(forward) * newSplit;
+
+	pPlane->m_vecTurnSpeed = glm::vec3(0.0f, 0.0f, 0.0f);
 }
 
 void CCarCtrl::SteerAICarWithPhysicsFollowPath(CVehicle* pVehicle, float* pSwerve, float* pAccel, float* pBrake, bool* pHandbrake)

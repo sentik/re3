@@ -216,8 +216,8 @@ bool CCarGenerator::CheckForBlockage(int32 mi)
 
 bool CCarGenerator::CheckIfWithinRangeOfAnyPlayers()
 {
-	CVector2D direction = FindPlayerCentreOfWorld(CWorld::PlayerInFocus) - m_vecPos;
-	float distance = direction.Magnitude();
+	glm::vec2 direction = toVec3(FindPlayerCentreOfWorld(CWorld::PlayerInFocus) - m_vecPos);
+	float distance = glm::length(direction);
 	float farclip = 110.0f * TheCamera.GenerationDistMultiplier;
 	float nearclip = farclip - 20.0f;
 	bool canBeRemoved = (m_nModelIndex > 0 && CModelInfo::IsBoatModel(m_nModelIndex) && 165.0f * TheCamera.GenerationDistMultiplier > distance &&
@@ -233,7 +233,7 @@ bool CCarGenerator::CheckIfWithinRangeOfAnyPlayers()
 		return false;
 	if (distance < nearclip && !m_bForceSpawn)
 		return false;
-	return DotProduct2D(direction, FindPlayerSpeed()) <= 0;
+	return glm::dot(direction, glm::vec2(FindPlayerSpeed())) <= 0;
 }
 
 void CTheCarGenerators::Process()

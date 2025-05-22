@@ -268,7 +268,7 @@ CCivilianPed::ProcessControl(void)
 					}
 				} else if (m_objective != OBJECTIVE_KILL_CHAR_ANY_MEANS && m_objective != OBJECTIVE_KILL_CHAR_ON_FOOT) {
 					if (m_pedInObjective && m_objective == OBJECTIVE_FOLLOW_CHAR_IN_FORMATION) {
-						if (m_moved.Magnitude() == 0.0f) {
+						if (glm::length(m_moved) == 0.0f) {
 							if (m_pedInObjective->m_nMoveState == PEDMOVE_STILL)
 								m_fRotationDest = m_pedInObjective->m_fRotationCur;
 						}
@@ -334,7 +334,7 @@ CCivilianPed::ProcessControl(void)
 					CWorld::ProcessVerticalLine(m_pMyVehicle->GetPosition(), -100.0f,
 						foundCol, foundEnt, true, false, false, false, false, false, nil);
 
-					if (m_pMyVehicle->m_vecMoveSpeed.MagnitudeSqr() < sq(0.01f)
+					if(glm::dot(m_pMyVehicle->m_vecMoveSpeed, m_vecMoveSpeed) < sq(0.01f)
 						&& foundCol.surfaceB != SURFACE_DEFAULT && foundCol.surfaceB != SURFACE_TARMAC && foundCol.surfaceB != SURFACE_PAVEMENT) {
 
 						if (m_pMyVehicle->CarHasRoof()) {
@@ -414,7 +414,7 @@ CCivilianPed::ProcessControl(void)
 		m_timerUnused = 0;
 	}
 
-	if (m_moved.Magnitude() > 0.0f)
+	if (glm::length(m_moved) > 0.0f)
 		Avoid();
 }
 

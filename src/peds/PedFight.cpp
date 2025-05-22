@@ -844,7 +844,7 @@ CPed::Attack(void)
 				weaponAnimAssoc->speed = 1.0f;
 
 		} else {
-			firePos = ourWeapon->m_vecFireOffset;
+			firePos = toVec(ourWeapon->m_vecFireOffset);
 
 			if(ourWeapon->m_AnimToPlay != ASSOCGRP_BASEBALLBAT && ourWeapon->m_AnimToPlay != ASSOCGRP_GOLFCLUB) {
 				if (ourWeapon->m_eWeaponFire != WEAPON_FIRE_MELEE) {
@@ -897,7 +897,7 @@ CPed::Attack(void)
 			attackShouldContinue = false;
 		}
 	} else {
-		CVector firePos = ourWeapon->m_vecFireOffset;
+		CVector firePos = toVec(ourWeapon->m_vecFireOffset);
 
 		if (weaponAnimAssoc->animId == ANIM_MELEE_ATTACK_2ND)
 			firePos.z = 0.7f * ourWeapon->m_fRadius - 1.0f;
@@ -926,7 +926,7 @@ CPed::Attack(void)
 		weaponAnimTime = weaponAnimAssoc->currentTime;
 
 		if (weaponAnimTime > 1.0f && weaponAnimTime - weaponAnimAssoc->timeStep <= 1.0f && weaponAnimAssoc->IsRunning()) {
-			firePos = ourWeapon->m_vecFireOffset;
+			firePos = toVec(ourWeapon->m_vecFireOffset);
 			TransformToNode(firePos, PED_HANDR);
 
 			CVector gunshellPos(
@@ -3022,10 +3022,10 @@ CPed::InflictDamage(CEntity *damagedBy, eWeaponType method, float damage, ePedPi
 				if (damagedBy && pedPiece != PEDPIECE_TORSO) {
 					CVehicle *vehicle = (CVehicle*)damagedBy;
 					if (method == WEAPONTYPE_RAMMEDBYCAR) {
-						float vehSpeed = vehicle->m_vecMoveSpeed.Magnitude();
+					        float vehSpeed = glm::length(vehicle->m_vecMoveSpeed);
 						dieDelta = 8.0f * vehSpeed + 4.0f;
 					} else {
-						float vehSpeed = vehicle->m_vecMoveSpeed.Magnitude();
+					        float vehSpeed = glm::length(vehicle->m_vecMoveSpeed);
 						dieDelta = 12.0f * vehSpeed + 4.0f;
 						dieSpeed = 16.0f * vehSpeed + 1.0f;
 					}
@@ -3645,7 +3645,7 @@ CPed::KillPedWithCar(CVehicle *car, float impulse)
 			return;
 	}
 
-	CVector distVec = GetPosition() - car->GetPosition();
+	glm::vec3 distVec = toVec3(GetPosition() - car->GetPosition());
 
 	if ((impulse > 12.0f || car->GetModelIndex() == MI_TRAIN) && !IsPlayer()) {
 		nodeToDamage = PED_TORSO;
@@ -3653,7 +3653,7 @@ CPed::KillPedWithCar(CVehicle *car, float impulse)
 		uint8 randVal = CGeneral::GetRandomNumber() & 3;
 
 		if (car == FindPlayerVehicle()) {
-			float carSpeed = car->m_vecMoveSpeed.Magnitude();
+			float carSpeed = glm::length(car->m_vecMoveSpeed);
 			uint8 shakeFreq;
 			if (100.0f * carSpeed * 2000.0f / car->m_fMass + 80.0f <= 250.0f) {
 				shakeFreq = 100.0f * carSpeed * 2000.0f / car->m_fMass + 80.0f;
@@ -3743,14 +3743,14 @@ CPed::KillPedWithCar(CVehicle *car, float impulse)
 						carLength = vehColMaxY;
 					}
 
-					float pedJumpSpeedToReachHighestZ = (carHighestZ - GetPosition().z) / (carLength / car->m_vecMoveSpeed.Magnitude());
+					float pedJumpSpeedToReachHighestZ = (carHighestZ - GetPosition().z) / (carLength / glm::length(car->m_vecMoveSpeed));
 
 					// TODO: What are we doing down here?
 					float unknown = ((CGeneral::GetRandomNumber() % 256) * 0.002 + 1.5) * pedJumpSpeedToReachHighestZ;
 
 					// After this point distVec isn't really distVec.
 					distVec = car->m_vecMoveSpeed;
-					distVec.Normalise();
+					distVec = glm::normalize(distVec);
 					distVec *= 0.2 * unknown;
 
 					if (damageDir != 1 && damageDir != 3)
@@ -3768,9 +3768,9 @@ CPed::KillPedWithCar(CVehicle *car, float impulse)
 
 						if (bonnet) {
 							if (CGeneral::GetRandomNumber() & 1) {
-								bonnet->m_vecMoveSpeed += Multiply3x3(car->GetMatrix(), CVector(0.1f, 0.0f, 0.5f));
+								bonnet->m_vecMoveSpeed += toVec3(Multiply3x3(car->GetMatrix(), glm::vec3(0.1f, 0.0f, 0.5f)));
 							} else {
-								bonnet->m_vecMoveSpeed += Multiply3x3(car->GetMatrix(), CVector(-0.1f, 0.0f, 0.5f));
+								bonnet->m_vecMoveSpeed += toVec3(Multiply3x3(car->GetMatrix(), glm::vec3(-0.1f, 0.0f, 0.5f)));
 							}
 							CVector forceDir = car->GetUp() * 10.0f;
 							bonnet->ApplyTurnForce(forceDir, car->GetForward());
@@ -3810,7 +3810,7 @@ CPed::KillPedWithCar(CVehicle *car, float impulse)
 		else
 			bKnockedUpIntoAir = false;
 
-		distVec.Normalise();
+		distVec = glm::normalize(distVec);
 
 		distVec *= Min(car->m_fMass / 1400.0f, 1.0f);
 		car->ApplyMoveForce(distVec * -100.0f);
@@ -3841,7 +3841,7 @@ CPed::KillPedWithCar(CVehicle *car, float impulse)
 			m_vecMoveSpeed = car->m_vecMoveSpeed * 0.75f;
 		}
 		m_vecMoveSpeed.z = 0.0f;
-		distVec.Normalise();
+		distVec = glm::normalize(distVec);
 		distVec *= Min(car->m_fMass / 1400.0f, 1.0f);
 		car->ApplyMoveForce(distVec * -60.0f);
 		Say(SOUND_PED_DEFEND);
@@ -3886,7 +3886,7 @@ CPed::DriveVehicle(void)
 			drivebyAssoc = RpAnimBlendClumpGetAssociation(GetClump(), ANIM_BIKE_DRIVEBY_FORWARD);
 
 		float velocityFwdDotProd = DotProduct(bike->m_vecMoveSpeed, bike->GetForward());
-		if (m_vecTurnSpeed.MagnitudeSqr() > 0.09f) {
+		if(glm::dot(m_vecTurnSpeed, m_vecTurnSpeed) > 0.09f) {
 			bike->KnockOffRider(WEAPONTYPE_FALL, 2, this, false);
 			if (bike->pPassengers[0])
 				bike->KnockOffRider(WEAPONTYPE_FALL, 2, bike->pPassengers[0], false);

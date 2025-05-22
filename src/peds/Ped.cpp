@@ -116,7 +116,7 @@ CPed::CPed(uint32 pedType) : m_pedIK(this)
 	m_shootTimer = 0;
 	m_carJackTimer = 0;
 	m_duckAndCoverTimer = 0;
-	m_moved = CVector2D(0.0f, 0.0f);
+	m_moved = glm::vec2(0.0f, 0.0f);
 	m_fRotationCur = 0.0f;
 	m_headingRate = 15.0f;
 	m_fRotationDest = 0.0f;
@@ -1325,7 +1325,7 @@ CPed::ScanForInterestingStuff(void)
 				CVehicle* veh = (CVehicle*)vehicles[i];
 
 				if (veh->VehicleCreatedBy != MISSION_VEHICLE) {
-					if (veh->m_vecMoveSpeed.Magnitude() <= 0.1f && veh->IsVehicleNormal()
+					if (glm::length(veh->m_vecMoveSpeed) <= 0.1f && veh->IsVehicleNormal()
 						&& veh->IsCar() && bestMonetaryValue < veh->pHandling->nMonetaryValue) {
 						mostExpensiveVehAround = i;
 						bestMonetaryValue = veh->pHandling->nMonetaryValue;
@@ -1456,7 +1456,7 @@ CPed::CalculateNewVelocity(void)
 	}
 
 	float walkAngle = WorkOutHeadingForMovingFirstPerson(m_fRotationCur);
-	float pedSpeed = m_moved.Magnitude();
+	float pedSpeed = glm::length(m_moved);
 	float localWalkAngle = CGeneral::LimitRadianAngle(walkAngle - m_fRotationCur);
 
 	if (localWalkAngle < -0.5f * PI) {
@@ -1468,7 +1468,7 @@ CPed::CalculateNewVelocity(void)
 	// Interestingly this part is responsible for diagonal walking.
 	if (localWalkAngle > -DEGTORAD(50.0f) && localWalkAngle < DEGTORAD(50.0f)) {
 		TheCamera.Cams[TheCamera.ActiveCam].m_fPlayerVelocity = pedSpeed;
-		m_moved = CVector2D(-Sin(walkAngle), Cos(walkAngle)) * pedSpeed;
+		m_moved = glm::vec2(-Sin(walkAngle), Cos(walkAngle)) * pedSpeed;
 	}
 
 	CAnimBlendAssociation *idleAssoc = RpAnimBlendClumpGetAssociation(GetClump(), ANIM_STD_IDLE);
@@ -1531,52 +1531,52 @@ CPed::UpdatePosition(void)
 	if (CReplay::IsPlayingBack() || !bIsStanding || m_attachedTo)
 		return;
 
-	CVector2D velocityChange;
+	glm::vec2 velocityChange;
 
 	SetHeading(m_fRotationCur);
 	if (m_pCurrentPhysSurface) {
-		CVector2D velocityOfSurface;
+		glm::vec2 velocityOfSurface;
 		if (!IsPlayer() && m_pCurrentPhysSurface->IsVehicle() && ((CVehicle*)m_pCurrentPhysSurface)->IsBoat()) {
 
 			// It seems R* didn't like m_vecOffsetFromPhysSurface for boats
-			CVector offsetToSurface = GetPosition() - m_pCurrentPhysSurface->GetPosition();
+			glm::vec3 offsetToSurface = toVec3(GetPosition() - m_pCurrentPhysSurface->GetPosition());
 			offsetToSurface.z -= FEET_OFFSET;
 
-			CVector surfaceMoveVelocity = m_pCurrentPhysSurface->m_vecMoveSpeed;
-			CVector surfaceTurnVelocity = CrossProduct(m_pCurrentPhysSurface->m_vecTurnSpeed, offsetToSurface);
+			glm::vec3 surfaceMoveVelocity = m_pCurrentPhysSurface->m_vecMoveSpeed;
+			glm::vec3 surfaceTurnVelocity = glm::cross(m_pCurrentPhysSurface->m_vecTurnSpeed, offsetToSurface);
 
 			// Also we use that weird formula instead of friction if it's boat
-			float slideMult = -m_pCurrentPhysSurface->m_vecTurnSpeed.MagnitudeSqr();
+			float slideMult = -glm::dot(m_pCurrentPhysSurface->m_vecTurnSpeed, m_pCurrentPhysSurface->m_vecTurnSpeed);
 			velocityOfSurface = slideMult * offsetToSurface * CTimer::GetTimeStep() + (surfaceTurnVelocity + surfaceMoveVelocity);
 			m_vecMoveSpeed.z = slideMult * offsetToSurface.z * CTimer::GetTimeStep() + (surfaceTurnVelocity.z + surfaceMoveVelocity.z);
 		} else {
-			velocityOfSurface = m_pCurrentPhysSurface->GetSpeed(m_vecOffsetFromPhysSurface);
+			velocityOfSurface = toVec3(m_pCurrentPhysSurface->GetSpeed(m_vecOffsetFromPhysSurface));
 		}
 		// Reminder: m_moved is displacement from walking/running.
-		velocityChange = m_moved + velocityOfSurface - m_vecMoveSpeed;
+		velocityChange = m_moved + velocityOfSurface - glm::vec2(m_vecMoveSpeed);
 		m_fRotationCur += m_pCurrentPhysSurface->m_vecTurnSpeed.z * CTimer::GetTimeStep();
 		m_fRotationDest += m_pCurrentPhysSurface->m_vecTurnSpeed.z * CTimer::GetTimeStep();
 	} else if (m_nSurfaceTouched == SURFACE_STEEP_CLIFF && (m_vecDamageNormal.x != 0.0f || m_vecDamageNormal.y != 0.0f)) {
 		// Ped got damaged by steep slope
-		m_vecMoveSpeed = CVector(0.0f, 0.0f, -0.001f);
+		m_vecMoveSpeed = glm::vec3(0.0f, 0.0f, -0.001f);
 		// some kind of
-		CVector2D reactionForce = m_vecDamageNormal;
-		reactionForce.Normalise();
+		glm::vec2 reactionForce = toVec3(m_vecDamageNormal);
+		reactionForce = glm::normalize(reactionForce);
 
 		velocityChange = 0.02f * reactionForce + m_moved;
 
-		float reactionAndVelocityDotProd = DotProduct2D(reactionForce, velocityChange);
+		float reactionAndVelocityDotProd = glm::dot(reactionForce, velocityChange);
 		// they're in same direction
 		if (reactionAndVelocityDotProd < 0.0f) {
 			velocityChange -= reactionAndVelocityDotProd * reactionForce;
 		}
 	} else {
-		velocityChange = m_moved - m_vecMoveSpeed;
+		velocityChange = m_moved - glm::vec2(m_vecMoveSpeed);
 	}
 	
 	// Take time step into account
 	if (m_pCurrentPhysSurface && (!m_pCurrentPhysSurface->bInfiniteMass || m_pCurrentPhysSurface->m_phy_flagA08)) {
-		float speedChange = velocityChange.Magnitude();
+		float speedChange = glm::length(velocityChange);
 		float changeMult = speedChange;
 		if (m_nPedState == PED_DIE && m_pCurrentPhysSurface->IsVehicle()) {
 			changeMult = 0.002f * CTimer::GetTimeStep();
@@ -1671,7 +1671,7 @@ CPed::ProcessBuoyancy(void)
 						}
 						pos.z = pos.z - 0.8f;
 						CParticleObject::AddObject(POBJECT_PED_WATER_SPLASH, pos, CVector(0.0f, 0.0f, 0.0f), 0.0f, 50, color, true);
-						m_vecMoveSpeed = CVector(0.0f, 0.0f, 0.0f);
+						m_vecMoveSpeed = glm::vec3(0.0f, 0.0f, 0.0f);
 						SetPedState(PED_IDLE);
 						return;
 					}
@@ -1701,7 +1701,7 @@ CPed::ProcessBuoyancy(void)
 			} else {
 				m_vecMoveSpeed.z = -0.01f;
 				DMAudio.PlayOneShot(m_audioEntityId, SOUND_SPLASH, 0.0f);
-				CVector aBitForward = 2.2f * m_vecMoveSpeed + GetPosition();
+				CVector aBitForward = 2.2f * toVec(m_vecMoveSpeed) + GetPosition();
 				float level = 0.0f;
 				if (CWaterLevel::GetWaterLevel(aBitForward, &level, false))
 					aBitForward.z = level;
@@ -2110,7 +2110,7 @@ CPed::ProcessControl(void)
 				case ENTITY_TYPE_VEHICLE:
 				{
 					CVehicle* collidingVeh = ((CVehicle*)collidingEnt);
-					float collidingVehSpeedSqr = collidingVeh->m_vecMoveSpeed.MagnitudeSqr();
+					float collidingVehSpeedSqr = glm::dot(collidingVeh->m_vecMoveSpeed, collidingVeh->m_vecMoveSpeed);
 
 					if (collidingVeh == m_pMyVehicle)
 						bCollidedWithMyVehicle = true;
@@ -2262,7 +2262,7 @@ CPed::ProcessControl(void)
 								}
 							} else {
 								bIsStanding = false;
-								CVector2D collidingEntMoveDir = -collidingVeh->m_vecMoveSpeed;
+								CVector2D collidingEntMoveDir = toVec(- collidingVeh->m_vecMoveSpeed);
 								int dir = GetLocalDirection(collidingEntMoveDir);
 								SetFall(1000, (AnimationId)(dir + ANIM_STD_HIGHIMPACT_FRONT), false);
 
@@ -2380,17 +2380,11 @@ CPed::ProcessControl(void)
 						}
 						int16 flyDir = 0;
 						float feetZ = GetPosition().z - FEET_OFFSET;
-#ifdef FIX_BUGS
 						if (obstacleForFlyingZ > feetZ && obstacleForFlyingZ < 500.0f)
 							flyDir = 1;
 						else if (obstacleForFlyingOtherDirZ > feetZ && obstacleForFlyingOtherDirZ < 501.0f)
 							flyDir = 2;
-#else
-						if ((obstacleForFlyingZ > feetZ && obstacleForFlyingOtherDirZ < 500.0f) || (obstacleForFlyingZ > feetZ && obstacleForFlyingOtherDirZ > feetZ))
-							flyDir = 1;
-						else if (obstacleForFlyingOtherDirZ > feetZ && obstacleForFlyingZ < 499.0f)
-							flyDir = 2;
-#endif
+
 
 						if (flyDir > 0 && !bHeadStuckInCollision) {
 							GetMatrix().SetTranslateOnly(flyDir == 2 ? obstacleForFlyingOtherDir.point : obstacleForFlying.point);
@@ -2547,8 +2541,8 @@ CPed::ProcessControl(void)
 			m_nDamagePieceType = 0;
 			m_fDamageImpulse = 0.0f;
 			m_pDamageEntity = nil;
-			m_vecTurnFriction = CVector(0.0f, 0.0f, 0.0f);
-			m_vecMoveFriction = CVector(0.0f, 0.0f, 0.0f);
+			m_vecTurnFriction = glm::vec3(0.0f, 0.0f, 0.0f);
+			m_vecMoveFriction = glm::vec3(0.0f, 0.0f, 0.0f);
 		}
 
 		if (m_nPedState != PED_DIE || bIsPedDieAnimPlaying) {
@@ -2700,9 +2694,7 @@ CPed::ProcessControl(void)
 					break;
 				case PED_AIM_GUN:
 					if (m_pPointGunAt && m_pPointGunAt->IsPed()
-#ifdef FIX_BUGS
 				        && !GetWeapon()->IsTypeMelee()
-#endif
 						&& ((CPed*)m_pPointGunAt)->CanSeeEntity(this, CAN_SEE_ENTITY_ANGLE_THRESHOLD * 2)) {
 						((CPed*)m_pPointGunAt)->ReactToPointGun(this);
 					}
@@ -2918,7 +2910,7 @@ CPed::ProcessEntityCollision(CEntity *collidingEnt, CColPoint *collidingPoints)
 				bWasStanding = true;
 			}
 			bCollisionProcessed = true;
-			m_fCollisionSpeed += m_vecMoveSpeed.Magnitude2D() * CTimer::GetTimeStep();
+			m_fCollisionSpeed += glm::length(glm::vec2(m_vecMoveSpeed)) * CTimer::GetTimeStep();
 			bStillOnValidPoly = false;
 			if (IsPlayer() || m_fCollisionSpeed >= 1.0f
 				&& (m_fCollisionSpeed >= 2.0f || m_nPedState != PED_WANDER_PATH)) {
@@ -3019,7 +3011,7 @@ CPed::ProcessEntityCollision(CEntity *collidingEnt, CColPoint *collidingPoints)
 
 						float upperSpeedLimit = 0.33f;
 						float lowerSpeedLimit = -0.25f;
-						float speed = m_vecMoveSpeed.Magnitude2D();
+						float speed = glm::length(glm::vec2(m_vecMoveSpeed));
 						if (m_nPedState == PED_IDLE) {
 							upperSpeedLimit *= 2.0f;
 							lowerSpeedLimit *= 1.5f;
@@ -3035,7 +3027,7 @@ CPed::ProcessEntityCollision(CEntity *collidingEnt, CColPoint *collidingPoints)
 
 							uint8 dir = 2; // from backward
 							if (m_vecMoveSpeed.x > 0.01f || m_vecMoveSpeed.x < -0.01f || m_vecMoveSpeed.y > 0.01f || m_vecMoveSpeed.y < -0.01f) {
-								CVector2D offset = -m_vecMoveSpeed;
+								glm::vec2 offset = -m_vecMoveSpeed;
 								dir = GetLocalDirection(offset);
 							}
 							if (CSurfaceTable::IsSoftLanding(intersectionPoint.surfaceB))
@@ -3080,7 +3072,7 @@ CPed::ProcessEntityCollision(CEntity *collidingEnt, CColPoint *collidingPoints)
 						sphereNormal.y = sphereNormal.y / normalLength;
 					}
 				} else {
-					float speed = m_vecMoveSpeed.Magnitude2D();
+					float speed = glm::length(glm::vec2(m_vecMoveSpeed));
 					sphereNormal.x = -m_vecMoveSpeed.x / Max(0.001f, speed);
 					sphereNormal.y = -m_vecMoveSpeed.y / Max(0.001f, speed);
 					GetMatrix().GetPosition().z -= 0.05f;
@@ -3359,7 +3351,7 @@ CPed::PlayFootSteps(void)
 
 	if (m_nSurfaceTouched == SURFACE_WATER) {
 		CRGBA rubberSmokeColor(255, 255, 255, 196);
-		float pedSpeed = CVector2D(m_vecMoveSpeed).Magnitude();
+		float pedSpeed = glm::length(glm::vec2(m_vecMoveSpeed));
 		if (pedSpeed > 0.03f && CTimer::GetFrameCounter() % 2 == 0 && pedSpeed > 0.13f) {
 			float particleSize = pedSpeed * 2.0f;
 
@@ -3369,10 +3361,10 @@ CPed::PlayFootSteps(void)
 			if (particleSize > 0.75f)
 				particleSize = 0.75f;
 
-			CVector particlePos = GetPosition() + GetForward() * 0.3f;
+			glm::vec3 particlePos = toVec3(GetPosition() + GetForward() * 0.3f);
 			particlePos.z -= 1.2f;
 
-			CVector particleDir = m_vecMoveSpeed * -0.75f;
+			glm::vec3 particleDir = m_vecMoveSpeed * -0.75f;
 
 			particleDir.z = CGeneral::GetRandomNumberInRange(0.01f, 0.03f);
 			CParticle::AddParticle(PARTICLE_CAR_SPLASH, particlePos, particleDir, nil, 0.5f * particleSize, CRGBA(0,0,0,0), 0, 0, 0, 0);
@@ -3394,6 +3386,12 @@ CPed::PlayFootSteps(void)
 }
 
 // Actually GetLocalDirectionTo(Turn/Look)
+int
+CPed::GetLocalDirection(const glm::vec2 &posOffset)
+{
+	return GetLocalDirection(CVector2D(posOffset.x, posOffset.y));
+}
+
 int
 CPed::GetLocalDirection(const CVector2D &posOffset)
 {
@@ -4077,7 +4075,7 @@ CPed::PedSetOutCarCB(CAnimBlendAssociation *animAssoc, void *arg)
 
 	ped->RestartNonPartialAnims();
 	ped->m_pVehicleAnim = nil;
-	ped->m_vecMoveSpeed = CVector(0.0f, 0.0f, 0.0f);
+	ped->m_vecMoveSpeed = glm::vec3(0.0f, 0.0f, 0.0f);
 	veh = ped->m_pMyVehicle;
 	if (veh) {
 		if (ped->m_nPedType == PEDTYPE_PROSTITUTE) {
@@ -4308,8 +4306,8 @@ CPed::PedSetInCarCB(CAnimBlendAssociation *animAssoc, void *arg)
 		if (ped->IsPlayer()) {
 			CCarCtrl::RegisterVehicleOfInterest(veh);
 			if (veh->GetStatus() == STATUS_SIMPLE) {
-				veh->m_vecMoveSpeed = CVector(0.0f, 0.0f, -0.00001f);
-				veh->m_vecTurnSpeed = CVector(0.0f, 0.0f, 0.0f);
+				veh->m_vecMoveSpeed = glm::vec3(0.0f, 0.0f, -0.00001f);
+				veh->m_vecTurnSpeed = glm::vec3(0.0f, 0.0f, 0.0f);
 			}
 			veh->SetStatus(STATUS_PLAYER);
 			AudioManager.PlayerJustGotInCar();
@@ -4334,16 +4332,16 @@ CPed::PedSetInCarCB(CAnimBlendAssociation *animAssoc, void *arg)
 	if (ped->IsPlayer()) {
 		if (ped->m_objective == OBJECTIVE_ENTER_CAR_AS_DRIVER || veh->IsBike()) {
 			if (veh->GetStatus() == STATUS_SIMPLE) {
-				veh->m_vecMoveSpeed = CVector(0.0f, 0.0f, 0.0f);
-				veh->m_vecTurnSpeed = CVector(0.0f, 0.0f, 0.0f);
+				veh->m_vecMoveSpeed = glm::vec3(0.0f, 0.0f, 0.0f);
+				veh->m_vecTurnSpeed = glm::vec3(0.0f, 0.0f, 0.0f);
 			}
 			veh->SetStatus(STATUS_PLAYER);
 		}
 		AudioManager.PlayerJustGotInCar();
 	} else if (ped->m_objective == OBJECTIVE_ENTER_CAR_AS_DRIVER) {
 		if (veh->GetStatus() == STATUS_SIMPLE) {
-			veh->m_vecMoveSpeed = CVector(0.0f, 0.0f, 0.0f);
-			veh->m_vecTurnSpeed = CVector(0.0f, 0.0f, 0.0f);
+			veh->m_vecMoveSpeed = glm::vec3(0.0f, 0.0f, 0.0f);
+			veh->m_vecTurnSpeed = glm::vec3(0.0f, 0.0f, 0.0f);
 		}
 		veh->SetStatus(STATUS_PHYSICS);
 	}
@@ -4968,7 +4966,7 @@ CPed::PreRender(void)
 		if ((TheCamera.GetPosition() - GetPosition()).Magnitude() < 25.0f) {
 			bool doSplashUp = true;
 			CColModel *ourCol = CModelInfo::GetColModel(GetModelIndex());
-			CVector speed = FindPlayerSpeed();
+			glm::vec3 speed = FindPlayerSpeed();
 
 			if (Abs(speed.x) <= 0.05f && Abs(speed.y) <= 0.05f) {
 				if (!OnGround() && m_nPedState != PED_ATTACK && m_nPedState != PED_FIGHT) {
@@ -5126,7 +5124,7 @@ CPed::Idle(void)
 	if (m_nMoveState != PEDMOVE_STILL && !IsPlayer())
 		SetMoveState(PEDMOVE_STILL);
 
-	m_moved = CVector2D(0.0f, 0.0f);
+	m_moved = glm::vec2(0.0f, 0.0f);
 }
 
 void
@@ -5138,7 +5136,7 @@ CPed::ClearPause(void)
 void
 CPed::Pause(void)
 {
-	m_moved = CVector2D(0.0f, 0.0f);
+	m_moved = glm::vec2(0.0f, 0.0f);
 	if (CTimer::GetTimeInMilliseconds() > m_leaveCarTimer)
 		ClearPause();
 }
@@ -8756,12 +8754,13 @@ CPed::Wait(void)
 					if (player) {
 						// Get up if player coming towards us with a car
 						if (player->InVehicle()){
-							CVector vehSpeedPerSec = player->m_pMyVehicle->m_vecMoveSpeed * GAME_SPEED_TO_METERS_PER_SECOND;
-							CVector vehPos = player->m_pMyVehicle->GetPosition();
-							CVector ourPos = GetPosition();
-							float timeUntilVehReachPed = DotProduct(ourPos - vehPos, vehSpeedPerSec) / vehSpeedPerSec.MagnitudeSqr();
+						        glm::vec3 vehSpeedPerSec = player->m_pMyVehicle->m_vecMoveSpeed * GAME_SPEED_TO_METERS_PER_SECOND;
+						        glm::vec3 vehPos = toVec3(player->m_pMyVehicle->GetPosition());
+						        glm::vec3 ourPos = toVec3(GetPosition());
+							float timeUntilVehReachPed = DotProduct(ourPos - vehPos, vehSpeedPerSec) / glm::length(vehSpeedPerSec);
 							if (timeUntilVehReachPed > 0.0 && timeUntilVehReachPed < 8.0f) {
-								if ((ourPos - (timeUntilVehReachPed * vehSpeedPerSec + vehPos)).Magnitude() < 5.0f) {
+							        const auto len = glm::length(ourPos - (timeUntilVehReachPed * vehSpeedPerSec + vehPos));
+							        if(len < 5.0f) {
 									m_pNextPathNode = nil;
 									m_threatEx = player;
 									bFleeWhenStanding = true;
@@ -9226,7 +9225,7 @@ CPed::FinishLaunchCB(CAnimBlendAssociation *animAssoc, void *arg)
 	else
 		ped->ApplyMoveForce(0.0f, 0.0f, 4.5f);
 	
-	if (sq(velocityFromAnim) > ped->m_vecMoveSpeed.MagnitudeSqr2D() || ped->m_pCurrentPhysSurface) {
+	if(sq(velocityFromAnim) > glm::length(glm::vec2(ped->m_vecMoveSpeed)) || ped->m_pCurrentPhysSurface) {
 
 #ifdef FREE_CAM
 		if (TheCamera.Cams[0].Using3rdPersonMouseCam() && !CCamera::bFreeCam) {

@@ -2822,7 +2822,8 @@ bool
 CCamera::TryToStartNewCamMode(int obbeMode)
 {
 	CVehicle *veh;
-	CVector target, camPos, playerSpeed, fwd, fwd2;
+	CVector target, camPos, fwd, fwd2;
+	glm::vec3 playerSpeed;
 	float angle;
 	float ground;
 	bool foundGround;
@@ -2845,8 +2846,9 @@ CCamera::TryToStartNewCamMode(int obbeMode)
 		camPos = FindPlayerCoors();
 		playerSpeed = FindPlayerSpeed();
 		playerSpeed.z = 0.0f;
-		playerSpeed.Normalise();
-		camPos += 20.0f*playerSpeed;
+		playerSpeed = glm::normalize(playerSpeed);
+		camPos += toVec(20.0f * playerSpeed);
+
 		camPos += 3.0f*CVector(playerSpeed.y, -playerSpeed.x, 0.0f);
 		if(FindPlayerVehicle() && FindPlayerVehicle()->IsBoat() && pTargetEntity->GetModelIndex() != MI_SKIMMER)
 			return false;
@@ -2880,8 +2882,9 @@ CCamera::TryToStartNewCamMode(int obbeMode)
 		camPos = FindPlayerCoors();
 		playerSpeed = FindPlayerSpeed();
 		playerSpeed.z = 0.0f;
-		playerSpeed.Normalise();
-		camPos += 16.0f*playerSpeed;
+		playerSpeed = glm::normalize(playerSpeed);
+		camPos += toVec(16.0f * playerSpeed);
+
 		camPos += 2.5f*CVector(playerSpeed.y, -playerSpeed.x, 0.0f);
 
 		ground = CWorld::FindGroundZFor3DCoord(camPos.x, camPos.y, camPos.z+5.0f, &foundGround);
@@ -2911,8 +2914,9 @@ CCamera::TryToStartNewCamMode(int obbeMode)
 		camPos = FindPlayerCoors();
 		playerSpeed = FindPlayerSpeed();
 		playerSpeed.z = 0.0f;
-		playerSpeed.Normalise();
-		camPos += 30.0f*playerSpeed;
+		playerSpeed = glm::normalize(playerSpeed);
+		camPos += toVec(30.0f * playerSpeed);
+
 		camPos += 8.0f*CVector(playerSpeed.y, -playerSpeed.x, 0.0f);
 
 		if(!CWorld::GetIsLineOfSightClear(FindPlayerCoors(), camPos, true, false, false, false, false, false, false))
@@ -2928,8 +2932,8 @@ CCamera::TryToStartNewCamMode(int obbeMode)
 		camPos = FindPlayerCoors();
 		playerSpeed = FindPlayerSpeed();
 		playerSpeed.z = 0.0f;
-		playerSpeed.Normalise();
-		camPos += 30.0f*playerSpeed;
+		playerSpeed = glm::normalize(playerSpeed);
+		camPos += toVec(30.0f * playerSpeed);
 		camPos += 6.0f*CVector(playerSpeed.y, -playerSpeed.x, 0.0f);
 
 		ground = CWorld::FindGroundZFor3DCoord(camPos.x, camPos.y, camPos.z+5.0f, &foundGround);
@@ -2978,10 +2982,8 @@ CCamera::TryToStartNewCamMode(int obbeMode)
 		}
 		return false;
 	case OBBE_COPCAR_WHEEL:
-#ifdef FIX_BUGS
 		if (CReplay::IsPlayingBack())
 			return false;
-#endif
 		if(FindPlayerPed()->m_pWanted->GetWantedLevel() < 1)
 			return false;
 		if(FindPlayerVehicle() == nil)
@@ -3014,8 +3016,8 @@ CCamera::TryToStartNewCamMode(int obbeMode)
 		camPos = FindPlayerCoors();
 		playerSpeed = FindPlayerSpeed();
 		playerSpeed.z = 0.0f;
-		playerSpeed.Normalise();
-		camPos += 15.0f*playerSpeed;
+		playerSpeed = glm::normalize(playerSpeed);
+		camPos += toVec(15.0f * playerSpeed);
 		camPos += CVector(2.0f, 1.0f, 0.0f);
 
 		ground = CWorld::FindGroundZFor3DCoord(camPos.x, camPos.y, camPos.z+5.0f, &foundGround);
@@ -3036,8 +3038,8 @@ CCamera::TryToStartNewCamMode(int obbeMode)
 		camPos = FindPlayerCoors();
 		playerSpeed = FindPlayerSpeed();
 		playerSpeed.z = 0.0f;
-		playerSpeed.Normalise();
-		camPos += 5.0f*playerSpeed;
+		playerSpeed = glm::normalize(playerSpeed);
+		camPos += toVec(5.0f * playerSpeed);
 		camPos += CVector(2.0f, 1.0f, 0.5f);
 
 		if(!CWorld::GetIsLineOfSightClear(FindPlayerCoors(), camPos, true, false, false, false, false, false, false))
@@ -3050,8 +3052,8 @@ CCamera::TryToStartNewCamMode(int obbeMode)
 		camPos = FindPlayerCoors();
 		playerSpeed = FindPlayerSpeed();
 		playerSpeed.z = 0.0f;
-		playerSpeed.Normalise();
-		camPos += 20.0f*playerSpeed;
+		playerSpeed = glm::normalize(playerSpeed);
+		camPos += toVec(20.0f * playerSpeed);
 		camPos += CVector(2.0f, 1.0f, 20.0f);
 
 		if(!CWorld::GetIsLineOfSightClear(FindPlayerCoors(), camPos, true, false, false, false, false, false, false))
@@ -3064,8 +3066,8 @@ CCamera::TryToStartNewCamMode(int obbeMode)
 		camPos = FindPlayerCoors();
 		playerSpeed = FindPlayerSpeed();
 		playerSpeed.z = 0.0f;
-		playerSpeed.Normalise();
-		camPos += 5.0f*playerSpeed;
+		playerSpeed = glm::normalize(playerSpeed);
+		camPos += toVec(5.0f * playerSpeed);
 		camPos += CVector(2.0f, 1.0f, 10.5f);
 
 		if(!CWorld::GetIsLineOfSightClear(FindPlayerCoors(), camPos, true, false, false, false, false, false, false))
@@ -3075,11 +3077,8 @@ CCamera::TryToStartNewCamMode(int obbeMode)
 		TakeControl(FindPlayerEntity(), CCam::MODE_FIXED, JUMP_CUT, CAMCONTROL_OBBE);
 		return true;
 	case OBBE_13:
-#ifdef FIX_BUGS
 		TakeControl(FindPlayerEntity(), CCam::MODE_TOP_DOWN_PED, JUMP_CUT, CAMCONTROL_OBBE);
-#else
-		TakeControl(FindPlayerEntity(), CCam::MODE_TOPDOWN, JUMP_CUT, CAMCONTROL_OBBE);
-#endif
+
 		return true;
 
 	// Heli modes
@@ -3099,8 +3098,8 @@ CCamera::TryToStartNewCamMode(int obbeMode)
 		camPos = FindPlayerCoors();
 		playerSpeed = FindPlayerSpeed();
 		playerSpeed.z = 0.0f;
-		playerSpeed.Normalise();
-		camPos += 34.0f*playerSpeed;
+		playerSpeed = glm::normalize(playerSpeed);
+		camPos += toVec(34.0f * playerSpeed);
 		camPos.z = FindPlayerCoors().z + 0.5f;
 		if(FindPlayerVehicle()->IsBoat())
 			camPos.z += 1.0f;
@@ -3127,11 +3126,11 @@ CCamera::TryToStartNewCamMode(int obbeMode)
 		camPos = FindPlayerCoors();
 		playerSpeed = FindPlayerSpeed();
 		playerSpeed.z = 0.0f;
-		playerSpeed.Normalise();
+		playerSpeed = glm::normalize(playerSpeed);
 		angle = CGeneral::GetATanOfXY(playerSpeed.x, playerSpeed.y) + DEGTORAD(60.0f);
-		playerSpeed += CVector(Cos(angle), Sin(angle), 0.0f);
-		playerSpeed.Normalise();
-		camPos += 30.0f*playerSpeed;
+		playerSpeed += glm::vec3(Cos(angle), Sin(angle), 0.0f);
+		playerSpeed = glm::normalize(playerSpeed);
+		camPos += toVec(30.0f * playerSpeed);
 		camPos.z = FindPlayerCoors().z - 5.5f;
 
 		foundGround = false;
@@ -3165,11 +3164,11 @@ CCamera::TryToStartNewCamMode(int obbeMode)
 		camPos = FindPlayerCoors();
 		playerSpeed = FindPlayerSpeed();
 		playerSpeed.z = 0.0f;
-		playerSpeed.Normalise();
+		playerSpeed = glm::normalize(playerSpeed);
 		angle = CGeneral::GetATanOfXY(playerSpeed.x, playerSpeed.y) + DEGTORAD(190.0f);
-		playerSpeed += CVector(Cos(angle), Sin(angle), 0.0f);
-		playerSpeed.Normalise();
-		camPos += 25.0f*playerSpeed;
+		playerSpeed += glm::vec3(Cos(angle), Sin(angle), 0.0f);
+		playerSpeed = glm::normalize(playerSpeed);
+		camPos += toVec(25.0f * playerSpeed);
 		camPos.z = FindPlayerCoors().z - 1.0f;
 
 		foundGround = false;
@@ -3207,17 +3206,14 @@ CCamera::TryToStartNewCamMode(int obbeMode)
 			camPos.z -= 23.0f;
 		playerSpeed = FindPlayerSpeed();
 		angle = CGeneral::GetATanOfXY(playerSpeed.x, playerSpeed.y) + DEGTORAD(145.0f);
-		playerSpeed += CVector(Cos(angle), Sin(angle), 0.0f);
-		playerSpeed.Normalise();
-		camPos += 15.0f*playerSpeed;
+		playerSpeed += glm::vec3(Cos(angle), Sin(angle), 0.0f);
+		playerSpeed = glm::normalize(playerSpeed);
+		camPos += toVec(15.0f * playerSpeed);
 
 		foundGround = false;
 		ground = CWorld::FindGroundZFor3DCoord(camPos.x, camPos.y, camPos.z+5.0f, &foundGround);
-#ifdef FIX_BUGS
 		if(foundGround)
-#else
-		if(ground == true)
-#endif
+
 		{
 			if(camPos.z < ground)
 				camPos.z = ground + 0.5f;
@@ -3250,17 +3246,13 @@ CCamera::TryToStartNewCamMode(int obbeMode)
 			camPos.z -= 1.0f;
 		playerSpeed = FindPlayerSpeed();
 		angle = CGeneral::GetATanOfXY(playerSpeed.x, playerSpeed.y) + DEGTORAD(28.0f);
-		playerSpeed += CVector(Cos(angle), Sin(angle), 0.0f);
-		playerSpeed.Normalise();
-		camPos += 12.5f*playerSpeed;
+		playerSpeed += glm::vec3(Cos(angle), Sin(angle), 0.0f);
+		playerSpeed = glm::normalize(playerSpeed);
+		camPos += toVec(12.5f * playerSpeed);
 
 		foundGround = false;
 		ground = CWorld::FindGroundZFor3DCoord(camPos.x, camPos.y, camPos.z+5.0f, &foundGround);
-#ifdef FIX_BUGS
 		if(foundGround)
-#else
-		if(ground == true)
-#endif
 		{
 			if(camPos.z < ground)
 				camPos.z = ground + 0.5f;

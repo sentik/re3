@@ -667,7 +667,7 @@ CShadows::StoreShadowForVehicle(CVehicle *pCar, VEH_SHD_TYPE type)
 				bDrawOnBuildings = true;
 			}
 			
-			if ( pCar->m_vecMoveSpeed.Magnitude() * CTimeStep::ms_fTimeStep > 0.1f || bDrawOnBuildings )
+			if(glm::length(pCar->m_vecMoveSpeed) * CTimeStep::ms_fTimeStep > 0.1f || bDrawOnBuildings)
 			{
 				if ( pCar->GetUp().z > 0.0f )
 				{
@@ -751,7 +751,7 @@ CShadows::StoreCarLightShadow(CVehicle *pCar, int32 nID, RwTexture *pTexture, CV
 				nBlue  = (int32)(nBlue  * fMult);
 			}
 
-			if ( pCar->m_vecMoveSpeed.Magnitude() * CTimeStep::ms_fTimeStep > 0.4f || pCar == FindPlayerVehicle() )
+			if(glm::length(pCar->m_vecMoveSpeed) * CTimeStep::ms_fTimeStep > 0.4f || pCar == FindPlayerVehicle())
 			{
 				StoreShadowToBeRendered(SHADOWTYPE_ADDITIVE, pTexture, pPosn,
 						fFrontX, fFrontY,

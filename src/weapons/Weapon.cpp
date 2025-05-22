@@ -879,7 +879,7 @@ CWeapon::FireInstantHit(CEntity *shooter, CVector *fireSource)
 	CVector2D ahead(-Sin(angle), Cos(angle));
 	ahead.Normalise();
 
-	CVector vel = ((CPed *)shooter)->m_vecMoveSpeed;
+	glm::vec3 vel = ((CPed *)shooter)->m_vecMoveSpeed;
 	int32 shooterMoving = false;
 	if ( Abs(vel.x) > 0.0f && Abs(vel.y) > 0.0f )
 		shooterMoving = true;
@@ -914,7 +914,8 @@ CWeapon::FireInstantHit(CEntity *shooter, CVector *fireSource)
 
 			if (shooter == FindPlayerPed() && inaccuracy != 0.f)
 			{
-				float newInaccuracy = fPlayerAimScale * FindPlayerPed()->m_fAttackButtonCounter * (inaccuracy * Min(1.f, fPlayerAimScaleDist / distToTarget));
+				float newInaccuracy = fPlayerAimScale * FindPlayerPed()->m_fAttackButtonCounter *
+				                      (inaccuracy * glm::min(1.f, fPlayerAimScaleDist / distToTarget));
 				if (FindPlayerPed()->bIsDucking)
 					newInaccuracy *= 0.4f;
 
@@ -927,7 +928,7 @@ CWeapon::FireInstantHit(CEntity *shooter, CVector *fireSource)
 			{
 				if (threatAttack == FindPlayerPed())
 				{
-					float speed = Min(0.33f, FindPlayerPed()->m_vecMoveSpeed.Magnitude());
+					float speed = glm::min(0.33f, glm::length(FindPlayerPed()->m_vecMoveSpeed));
 					inaccuracy *= (0.3f * speed * 100.f / 33.f + 0.8f);
 				}
 				target.x += CGeneral::GetRandomNumberInRange(-0.2f, 0.2f) * inaccuracy;
@@ -2494,10 +2495,10 @@ CWeapon::FireInstantHitFromCar(CVehicle *shooter, bool left, bool right)
 	{
 		if ( shooter->pDriver )
 		{
-			source = info->m_vecFireOffset;
+			source = toVec(info->m_vecFireOffset);
 			
 			shooter->pDriver->TransformToNode(source, PED_HANDR);
-			source += CTimer::GetTimeStep() * shooter->m_vecMoveSpeed;
+			source += toVec(CTimer::GetTimeStep() * shooter->m_vecMoveSpeed);
 			
 			if ( left )
 				target = source - info->m_fRange * shooter->GetRight();
@@ -2512,7 +2513,7 @@ CWeapon::FireInstantHitFromCar(CVehicle *shooter, bool left, bool right)
 			source = shooter->GetMatrix() * CVector(-shooter->GetColModel()->boundingBox.max.x + -0.25f,
 													float(CGeneral::GetRandomNumber() & 255) * 0.001f + modelInfo->GetFrontSeatPosn().y - 0.05f,
 													modelInfo->GetFrontSeatPosn().z + 0.63f);
-			source += CTimer::GetTimeStep() * shooter->m_vecMoveSpeed;
+			source += toVec(CTimer::GetTimeStep() * shooter->m_vecMoveSpeed);
 	
 	
 			target = shooter->GetMatrix() * CVector(-info->m_fRange,
@@ -2524,7 +2525,7 @@ CWeapon::FireInstantHitFromCar(CVehicle *shooter, bool left, bool right)
 			source = shooter->GetMatrix() * CVector(shooter->GetColModel()->boundingBox.max.x + 0.25f,
 													float(CGeneral::GetRandomNumber() & 255) * 0.001f + modelInfo->GetFrontSeatPosn().y - 0.18f,
 													modelInfo->GetFrontSeatPosn().z + 0.52f);
-			source += CTimer::GetTimeStep() * shooter->m_vecMoveSpeed;
+			source += toVec(CTimer::GetTimeStep() * shooter->m_vecMoveSpeed);
 	
 			target = shooter->GetMatrix() * CVector(info->m_fRange,
 														modelInfo->GetFrontSeatPosn().y,
@@ -2535,7 +2536,7 @@ CWeapon::FireInstantHitFromCar(CVehicle *shooter, bool left, bool right)
 			source = shooter->GetMatrix() * CVector(float(CGeneral::GetRandomNumber() & 255) * 0.001f + -0.4f,
 													modelInfo->GetFrontSeatPosn().y + shooter->GetColModel()->boundingBox.max.y + 0.2f,
 													modelInfo->GetFrontSeatPosn().z + 0.55f);
-			source += CTimer::GetTimeStep() * shooter->m_vecMoveSpeed;
+			source += toVec(CTimer::GetTimeStep() * shooter->m_vecMoveSpeed);
 	
 			target = shooter->GetMatrix() * CVector(0.0f,
 													info->m_fRange,
@@ -2545,15 +2546,15 @@ CWeapon::FireInstantHitFromCar(CVehicle *shooter, bool left, bool right)
 	else
 	{
 		if ( left )
-			source = info->m_vecFireOffset;
+			source = toVec(info->m_vecFireOffset);
 		else
 		{
-			source    = 1.8f * info->m_vecFireOffset;
+			source = toVec(1.8f * info->m_vecFireOffset);
 			source.z -= 0.1f;
 		}
 		
 		shooter->pDriver->TransformToNode(source, PED_HANDR);
-		source += CTimer::GetTimeStep() * shooter->m_vecMoveSpeed;
+		source += toVec(CTimer::GetTimeStep() * shooter->m_vecMoveSpeed);
 		
 		if ( left )
 			target = source - info->m_fRange * shooter->GetRight();
@@ -2574,10 +2575,10 @@ CWeapon::FireInstantHitFromCar(CVehicle *shooter, bool left, bool right)
 		if ( !shooter->IsBike() )
 			CParticle::AddParticle(PARTICLE_GUNFLASH, source, CVector(0.0f, 0.0f, 0.0f));
 		else
-			CParticle::AddParticle(PARTICLE_GUNFLASH_NOANIM, source, 1.4f*shooter->m_vecMoveSpeed);
+			CParticle::AddParticle(PARTICLE_GUNFLASH_NOANIM, source, toVec(1.4f * shooter->m_vecMoveSpeed));
 	}
 	else
-		CParticle::AddParticle(PARTICLE_GUNFLASH_NOANIM, source, 1.6f*shooter->m_vecMoveSpeed, nil, 0.18f);
+		CParticle::AddParticle(PARTICLE_GUNFLASH_NOANIM, source, toVec(1.6f*shooter->m_vecMoveSpeed), nil, 0.18f);
 
 	CEventList::RegisterEvent(EVENT_GUNSHOT, EVENT_ENTITY_VEHICLE, shooter, FindPlayerPed(), 1000);
 
@@ -3180,7 +3181,7 @@ CWeapon::HitsGround(CEntity *holder, CVector *fireSource, CEntity *aimingTo)
 
 	CWeaponInfo *info = GetInfo();
 
-	CVector adjustedOffset = info->m_vecFireOffset;
+	CVector adjustedOffset = toVec(info->m_vecFireOffset);
 	adjustedOffset.z += 0.6f;
 
 	CVector source, target;
@@ -3212,11 +3213,7 @@ CWeapon::HitsGround(CEntity *holder, CVector *fireSource, CEntity *aimingTo)
 void
 CWeapon::BlowUpExplosiveThings(CEntity *thing)
 {
-#ifdef FIX_BUGS
 	if ( thing && thing->IsObject() )
-#else
-	if ( thing )
-#endif
 	{
 		CObject *object = (CObject*)thing;
 		int32 mi = object->GetModelIndex();

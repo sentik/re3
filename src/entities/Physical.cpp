@@ -35,12 +35,12 @@ CPhysical::CPhysical(void)
 #endif
 
 	m_fForceMultiplier = 1.0f;
-	m_vecMoveSpeed = CVector(0.0f, 0.0f, 0.0f);
-	m_vecTurnSpeed = CVector(0.0f, 0.0f, 0.0f);
-	m_vecMoveFriction = CVector(0.0f, 0.0f, 0.0f);
-	m_vecTurnFriction = CVector(0.0f, 0.0f, 0.0f);
-	m_vecMoveSpeedAvg = CVector(0.0f, 0.0f, 0.0f);
-	m_vecTurnSpeedAvg = CVector(0.0f, 0.0f, 0.0f);
+	m_vecMoveSpeed = glm::vec3(0.0f, 0.0f, 0.0f);
+	m_vecTurnSpeed = glm::vec3(0.0f, 0.0f, 0.0f);
+	m_vecMoveFriction = glm::vec3(0.0f, 0.0f, 0.0f);
+	m_vecTurnFriction = glm::vec3(0.0f, 0.0f, 0.0f);
+	m_vecMoveSpeedAvg = glm::vec3(0.0f, 0.0f, 0.0f);
+	m_vecTurnSpeedAvg = glm::vec3(0.0f, 0.0f, 0.0f);
 
 	m_movingListNode = nil;
 	m_nStaticFrames = 0;
@@ -318,13 +318,13 @@ CPhysical::RemoveRefsToEntity(CEntity *ent)
 void
 CPhysical::PlacePhysicalRelativeToOtherPhysical(CPhysical *other, CPhysical *phys, CVector localPos)
 {
-	CVector worldPos = other->GetMatrix() * localPos;
+	glm::vec3 worldPos = toVec3(other->GetMatrix() * localPos);
 	float step = 0.9f * CTimer::GetTimeStep();
-	CVector pos = other->m_vecMoveSpeed*step + worldPos;
+	glm::vec3 pos = other->m_vecMoveSpeed * step + worldPos;
 
 	CWorld::Remove(phys);
 	phys->GetMatrix() = other->GetMatrix();
-	phys->SetPosition(pos);
+	phys->SetPosition(toVec(pos));
 	phys->m_vecMoveSpeed = other->m_vecMoveSpeed;
 	phys->GetMatrix().UpdateRW();
 	phys->UpdateRwFrame();
@@ -373,15 +373,15 @@ CPhysical::ProcessControl(void)
 		   IsPed() && !bPedPhysics){
 			m_vecMoveSpeedAvg = (m_vecMoveSpeedAvg + m_vecMoveSpeed)/2.0f;
 			m_vecTurnSpeedAvg = (m_vecTurnSpeedAvg + m_vecTurnSpeed)/2.0f;
+
 			float step = CTimer::GetTimeStep() * 0.003f;
-			if(m_vecMoveSpeedAvg.MagnitudeSqr() < step*step &&
-			   m_vecTurnSpeedAvg.MagnitudeSqr() < step*step){
+			if(glm::dot(m_vecMoveSpeedAvg, m_vecMoveSpeedAvg) < step * step && glm::dot(m_vecTurnSpeedAvg, m_vecTurnSpeedAvg) < step * step) {
 				m_nStaticFrames++;
 				if(m_nStaticFrames > 10){
 					m_nStaticFrames = 10;
 					SetIsStatic(true);
-					m_vecMoveSpeed = CVector(0.0f, 0.0f, 0.0f);
-					m_vecTurnSpeed = CVector(0.0f, 0.0f, 0.0f);
+					m_vecMoveSpeed = glm::vec3(0.0f, 0.0f, 0.0f);
+					m_vecTurnSpeed = glm::vec3(0.0f, 0.0f, 0.0f);
 					m_vecMoveFriction = m_vecMoveSpeed;
 					m_vecTurnFriction = m_vecTurnSpeed;
 					return;
@@ -413,14 +413,20 @@ CPhysical::ProcessControl(void)
 CVector
 CPhysical::GetSpeed(const CVector &r)
 {
-	return m_vecMoveSpeed + m_vecMoveFriction + CrossProduct(m_vecTurnFriction + m_vecTurnSpeed, r);
+	return toVec(m_vecMoveSpeed + m_vecMoveFriction) + CrossProduct(toVec(m_vecTurnFriction + m_vecTurnSpeed), r);
+}
+
+glm::vec3
+CPhysical::GetSpeed(const glm::vec3 &r)
+{
+	return m_vecMoveSpeed + m_vecMoveFriction + toVec3(CrossProduct(toVec(m_vecTurnFriction + m_vecTurnSpeed), toVec(r)));
 }
 
 void
 CPhysical::ApplyMoveSpeed(void)
 {
 	if(bIsFrozen)
-		m_vecMoveSpeed = CVector(0.0f, 0.0f, 0.0f);
+		m_vecMoveSpeed = glm::vec3(0.0f, 0.0f, 0.0f);
 	else
 		GetMatrix().Translate(m_vecMoveSpeed * CTimer::GetTimeStep());
 }
@@ -429,11 +435,11 @@ void
 CPhysical::ApplyTurnSpeed(void)
 {
 	if(bIsFrozen){
-		m_vecTurnSpeed = CVector(0.0f, 0.0f, 0.0f);
+		m_vecTurnSpeed = glm::vec3(0.0f, 0.0f, 0.0f);
 	}else{
 		// Move the coordinate axes by their speed
 		// Note that this denormalizes the matrix
-		CVector turnvec = m_vecTurnSpeed*CTimer::GetTimeStep();
+		CVector turnvec = toVec(m_vecTurnSpeed * CTimer::GetTimeStep());
 		GetRight() += CrossProduct(turnvec, GetRight());
 		GetForward() += CrossProduct(turnvec, GetForward());
 		GetUp() += CrossProduct(turnvec, GetUp());
@@ -443,28 +449,28 @@ CPhysical::ApplyTurnSpeed(void)
 void
 CPhysical::ApplyMoveForce(float jx, float jy, float jz)
 {
-	m_vecMoveSpeed += CVector(jx, jy, jz)*(1.0f/m_fMass);
+	m_vecMoveSpeed += glm::vec3(jx, jy, jz)*(1.0f/m_fMass);
 }
 
 void
 CPhysical::ApplyTurnForce(float jx, float jy, float jz, float px, float py, float pz)
 {
-	CVector com = Multiply3x3(GetMatrix(), m_vecCentreOfMass);
-	CVector turnimpulse = CrossProduct(CVector(px, py, pz)-com, CVector(jx, jy, jz));
+	glm::vec3 com = toVec3(Multiply3x3(GetMatrix(), m_vecCentreOfMass));
+	glm::vec3 turnimpulse = glm::cross(glm::vec3(px, py, pz) - com, glm::vec3(jx, jy, jz));
 	m_vecTurnSpeed += turnimpulse*(1.0f/m_fTurnMass);
 }
 
 void
 CPhysical::ApplyFrictionMoveForce(float jx, float jy, float jz)
 {
-	m_vecMoveFriction += CVector(jx, jy, jz)*(1.0f/m_fMass);
+	m_vecMoveFriction += glm::vec3(jx, jy, jz) * (1.0f / m_fMass);
 }
 
 void
 CPhysical::ApplyFrictionTurnForce(float jx, float jy, float jz, float px, float py, float pz)
 {
-	CVector com = Multiply3x3(GetMatrix(), m_vecCentreOfMass);
-	CVector turnimpulse = CrossProduct(CVector(px, py, pz)-com, CVector(jx, jy, jz));
+	glm::vec3 com = toVec3(Multiply3x3(GetMatrix(), m_vecCentreOfMass));
+	glm::vec3 turnimpulse = glm::cross(glm::vec3(px, py, pz) - com, glm::vec3(jx, jy, jz));
 	m_vecTurnFriction += turnimpulse*(1.0f/m_fTurnMass);
 }
 
@@ -486,7 +492,7 @@ CPhysical::ApplySpringCollisionAlt(float springConst, CVector &springDir, CVecto
 {
 	float compression = 1.0f - springRatio;
 	if(compression > 0.0f){
-		if(DotProduct(springDir, forceDir) > 0.0f)
+		if(glm::dot(toVec3(springDir), toVec3(forceDir)) > 0.0f)
 			forceDir *= -1.0f;
 		float step = Min(CTimer::GetTimeStep(), 3.0f);
 		float impulse = GRAVITY*m_fMass*step * springConst * compression * bias*2.0f;
@@ -502,12 +508,12 @@ CPhysical::ApplySpringCollisionAlt(float springConst, CVector &springDir, CVecto
 bool
 CPhysical::ApplySpringDampening(float damping, CVector &springDir, CVector &point, CVector &speed)
 {
-	float speedA = DotProduct(speed, springDir);
-	float speedB = DotProduct(GetSpeed(point), springDir);
-#ifdef FIX_BUGS
+	float speedA = glm::dot(toVec3(speed), toVec3(springDir));
+	float speedB = glm::dot(toVec3(GetSpeed(point)), toVec3(springDir));
+
 	if (speedB == 0.0f)
 		return true;
-#endif
+
 	float step = Min(CTimer::GetTimeStep(), 3.0f);
 	float impulse = -damping * (speedA + speedB)/2.0f * m_fMass * step * 0.53f;
 	if(bIsHeavy)
@@ -532,20 +538,22 @@ CPhysical::ApplyGravity(void)
 		return;
 #ifdef WALLCLIMB_CHEAT
 	if (gGravityCheat && this == FindPlayerVehicle()) {
-		static CVector gravityUp(0.0f, 0.0f, 1.0f), surfaceUp(0.0f, 0.0f, 1.0f);
+		static glm::vec3 gravityUp(0.0f, 0.0f, 1.0f), surfaceUp(0.0f, 0.0f, 1.0f);
 		CVector belowCar = GetPosition() - 2.0f*GetUp();
 		CColPoint point;
 		CEntity* entity;
 		if (CWorld::ProcessLineOfSight(GetPosition(), belowCar, point, entity, true, false, false, false, false, false))
-			surfaceUp = point.normal;
+			surfaceUp = toVec3(point.normal);
 		else
-			surfaceUp = CVector(0.0f, 0.0f, 1.0f);
+			surfaceUp = glm::vec3(0.0f, 0.0f, 1.0f);
 		float t = Clamp(CTimer::GetTimeStep() * 0.5f, 0.05f, 0.8f);
 		gravityUp = gravityUp * (1.0f - t) + surfaceUp * t;
-		if (gravityUp.MagnitudeSqr() < 0.1f)
-			gravityUp = CVector(0.0f, 0.0f, 1.0f);
-		else
-			gravityUp.Normalise();
+		if (glm::dot(gravityUp, gravityUp) < 0.1f)
+			gravityUp = glm::vec3(0.0f, 0.0f, 1.0f);
+		else {
+			gravityUp = glm::normalize(gravityUp);
+
+		}
 		m_vecMoveSpeed -= GRAVITY * CTimer::GetTimeStep() * gravityUp;
 		return;
 	}
@@ -558,8 +566,8 @@ CPhysical::ApplyFriction(void)
 {
 	m_vecMoveSpeed += m_vecMoveFriction;
 	m_vecTurnSpeed += m_vecTurnFriction;
-	m_vecMoveFriction = CVector(0.0f, 0.0f, 0.0f);
-	m_vecTurnFriction = CVector(0.0f, 0.0f, 0.0f);
+	m_vecMoveFriction = glm::vec3(0.0f, 0.0f, 0.0f);
+	m_vecTurnFriction = glm::vec3(0.0f, 0.0f, 0.0f);
 }
 
 void
@@ -570,7 +578,7 @@ CPhysical::ApplyAirResistance(void)
 		m_vecMoveSpeed *= f;
 		m_vecTurnSpeed *= f;
 	}else if(GetStatus() != STATUS_GHOST){ 
-		float f = Pow(1.0f/Abs(1.0f + m_fAirResistance*0.5f*m_vecMoveSpeed.MagnitudeSqr()), CTimer::GetTimeStep());
+		float f = Pow(1.0f / Abs(1.0f + m_fAirResistance * 0.5f * glm::dot(m_vecMoveSpeed, m_vecMoveSpeed)), CTimer::GetTimeStep());
 		m_vecMoveSpeed *= f;
 		m_vecTurnSpeed *= 0.99f;
 	}
@@ -586,6 +594,8 @@ CPhysical::ApplyCollision(CPhysical *B, CColPoint &colpoint, float &impulseA, fl
 	bool foo = false;	// TODO: what does this mean?
 	bool ispedcontactA = false;
 	bool ispedcontactB = false;
+
+	const glm::vec3 vec3ColpointNormal = toVec3(colpoint.normal);
 
 	float massFactorA;
 	if(B->bPedPhysics){
@@ -616,14 +626,14 @@ CPhysical::ApplyCollision(CPhysical *B, CColPoint &colpoint, float &impulseA, fl
 	float speedA, speedB;
 	if(B->GetIsStatic() && !foo){
 		if(A->bPedPhysics){
-			speedA = DotProduct(A->m_vecMoveSpeed, colpoint.normal);
+			speedA = glm::dot(A->m_vecMoveSpeed, vec3ColpointNormal);
 			if(speedA < 0.0f){
 				if(B->IsObject()){
 					impulseA = -speedA * A->m_fMass;
 					impulseB = impulseA;
 					if(impulseA > Bobj->m_fUprootLimit){
 						if(IsGlass(B->GetModelIndex()))
-							CGlass::WindowRespondsToCollision(B, impulseA, A->m_vecMoveSpeed, colpoint.point, false);
+							CGlass::WindowRespondsToCollision(B, impulseA, toVec(A->m_vecMoveSpeed), colpoint.point, false);
 						else if(!B->bInfiniteMass){
 							B->SetIsStatic(false);
 							CWorld::Players[CWorld::PlayerInFocus].m_nHavocLevel += 2;
@@ -648,15 +658,15 @@ CPhysical::ApplyCollision(CPhysical *B, CColPoint &colpoint, float &impulseA, fl
 				}
 			}
 		}else{
-			CVector pointposA = colpoint.point - A->GetPosition();
-			speedA = DotProduct(A->GetSpeed(pointposA), colpoint.normal);
+			glm::vec3 pointposA = toVec3(colpoint.point - A->GetPosition());
+			speedA = glm::dot(A->GetSpeed(pointposA), vec3ColpointNormal);
 			if(speedA < 0.0f){
 				if(B->IsObject()){
 					if(A->bHasHitWall)
 						eA = -1.0f;
 					else
 						eA = -(1.0f + A->m_fElasticity);
-					impulseA = eA * speedA * A->GetMass(pointposA, colpoint.normal);
+					impulseA = eA * speedA * A->GetMass(toVec(pointposA), colpoint.normal);
 					impulseB = impulseA;
 
 					if(Bobj->m_nCollisionDamageEffect && impulseA > 20.0f){
@@ -664,7 +674,7 @@ CPhysical::ApplyCollision(CPhysical *B, CColPoint &colpoint, float &impulseA, fl
 						if(!B->bUsesCollision){
 							if(!A->bInfiniteMass){
 								A->ApplyMoveForce(colpoint.normal*0.2f*impulseA);
-								A->ApplyTurnForce(colpoint.normal*0.2f*impulseA, pointposA);
+								A->ApplyTurnForce(colpoint.normal * 0.2f * impulseA, toVec(pointposA));
 							}
 							return false;
 						}
@@ -673,7 +683,7 @@ CPhysical::ApplyCollision(CPhysical *B, CColPoint &colpoint, float &impulseA, fl
 					if((impulseA > Bobj->m_fUprootLimit || A->bIsStuck) &&
 					   !B->bInfiniteMass){
 						if(IsGlass(B->GetModelIndex()))
-							CGlass::WindowRespondsToCollision(B, impulseA, A->m_vecMoveSpeed, colpoint.point, false);
+							CGlass::WindowRespondsToCollision(B, impulseA, toVec(A->m_vecMoveSpeed), colpoint.point, false);
 						else
 							B->SetIsStatic(false);
 						int16 model = B->GetModelIndex();
@@ -694,7 +704,7 @@ CPhysical::ApplyCollision(CPhysical *B, CColPoint &colpoint, float &impulseA, fl
 						if(!A->bInfiniteMass){
 							A->ApplyMoveForce(f);
 							if(!A->IsVehicle() || !CWorld::bNoMoreCollisionTorque)
-								A->ApplyTurnForce(f, pointposA);
+								A->ApplyTurnForce(f, toVec(pointposA));
 						}
 						return true;
 					}
@@ -716,9 +726,9 @@ CPhysical::ApplyCollision(CPhysical *B, CColPoint &colpoint, float &impulseA, fl
 
 	if(A->bPedPhysics && B->bPedPhysics){
 		// negative if A is moving towards B
-		speedA = DotProduct(A->m_vecMoveSpeed, colpoint.normal);
+		speedA = glm::dot(A->m_vecMoveSpeed, toVec3(colpoint.normal));
 		// positive if B is moving towards A
-		speedB = DotProduct(B->m_vecMoveSpeed, colpoint.normal);
+		speedB = glm::dot(B->m_vecMoveSpeed, toVec3(colpoint.normal));
 
 		bool affectB = false;
 		float mA = A->m_fMass;
@@ -751,12 +761,12 @@ CPhysical::ApplyCollision(CPhysical *B, CColPoint &colpoint, float &impulseA, fl
 			return true;
 		}
 	}else if(A->bPedPhysics){
-		CVector pointposB = colpoint.point - B->GetPosition();
-		speedA = DotProduct(A->m_vecMoveSpeed, colpoint.normal);
-		speedB = DotProduct(B->GetSpeed(pointposB), colpoint.normal);
-
+		glm::vec3 pointposB = toVec3(colpoint.normal) - toVec3(B->GetPosition());
+		speedA = glm::dot(A->m_vecMoveSpeed, toVec3(colpoint.normal));
+		speedB = glm::dot(B->GetSpeed(pointposB), toVec3(colpoint.normal));
+		
 		float mA = A->m_fMass*massFactorA;
-		float mB = B->GetMassTweak(pointposB, colpoint.normal, massFactorB);
+		float mB = B->GetMassTweak(toVec(pointposB), colpoint.normal, massFactorB);
 		float speedSum;
 		if(foo)
 			speedSum = speedB;
@@ -785,14 +795,14 @@ CPhysical::ApplyCollision(CPhysical *B, CColPoint &colpoint, float &impulseA, fl
 			}
 			if(!B->bInfiniteMass && !ispedcontactB){
 				B->ApplyMoveForce(fB);
-				B->ApplyTurnForce(fB, pointposB);
+				B->ApplyTurnForce(fB, toVec(pointposB));
 			}
 			return true;
 		}
 	}else if(B->bPedPhysics){
 		CVector pointposA = colpoint.point - A->GetPosition();
-		speedA = DotProduct(A->GetSpeed(pointposA), colpoint.normal);
-		speedB = DotProduct(B->m_vecMoveSpeed, colpoint.normal);
+		speedA = glm::dot(toVec3(A->GetSpeed(pointposA)), vec3ColpointNormal);
+		speedB = glm::dot(B->m_vecMoveSpeed, vec3ColpointNormal);
 
 		float mA = A->GetMassTweak(pointposA, colpoint.normal, massFactorA);
 		float mB = B->m_fMass*massFactorB;
@@ -832,8 +842,8 @@ CPhysical::ApplyCollision(CPhysical *B, CColPoint &colpoint, float &impulseA, fl
 	}else{
 		CVector pointposA = colpoint.point - A->GetPosition();
 		CVector pointposB = colpoint.point - B->GetPosition();
-		speedA = DotProduct(A->GetSpeed(pointposA), colpoint.normal);
-		speedB = DotProduct(B->GetSpeed(pointposB), colpoint.normal);
+		speedA = glm::dot(toVec3(A->GetSpeed(pointposA)),vec3ColpointNormal);
+		speedB = glm::dot(toVec3(B->GetSpeed(pointposB)),vec3ColpointNormal);
 		float mA = A->GetMassTweak(pointposA, colpoint.normal, massFactorA);
 		float mB = B->GetMassTweak(pointposB, colpoint.normal, massFactorB);
 		float speedSum = (mB*speedB + mA*speedA)/(mA + mB);
@@ -898,9 +908,11 @@ CPhysical::ApplyCollision(CPhysical *B, CColPoint &colpoint, float &impulseA, fl
 bool
 CPhysical::ApplyCollision(CColPoint &colpoint, float &impulse)
 {
+	const glm::vec3 vec3ColpointNormal = toVec3(colpoint.normal);
+
 	float speed;
 	if(bPedPhysics){
-		speed = DotProduct(m_vecMoveSpeed, colpoint.normal);
+		speed = glm::dot(m_vecMoveSpeed, vec3ColpointNormal);
 		if(speed < 0.0f){
 			impulse = -speed * m_fMass;
 			ApplyMoveForce(colpoint.normal*impulse);
@@ -908,12 +920,12 @@ CPhysical::ApplyCollision(CColPoint &colpoint, float &impulse)
 		}
 	}else{
 		CVector pointpos = colpoint.point - GetPosition();
-		speed = DotProduct(GetSpeed(pointpos), colpoint.normal);
+		speed = glm::dot(toVec3(GetSpeed(pointpos)), vec3ColpointNormal);
 
 		if(speed < 0.0f){
 			float mass = GetMass(pointpos, colpoint.normal);
 			impulse = -(m_fElasticity + 1.0f) * speed * mass;
-			CVector f = colpoint.normal*impulse;
+			CVector f = colpoint.normal * impulse;
 			if(IsVehicle()){
 				f.x *= 1.4f;
 				f.y *= 1.4f;
@@ -936,14 +948,15 @@ bool
 CPhysical::ApplyCollisionAlt(CEntity *B, CColPoint &colpoint, float &impulse, CVector &moveSpeed, CVector &turnSpeed)
 {
 	float normalSpeed;
-	CVector speed;
-	CVector vImpulse;
+	glm::vec3 speed;
+	glm::vec3 vImpulse;
+	const glm::vec3 vec3ColpointNormal = toVec3(colpoint.normal);
 
 	if(GetModelIndex() == MI_BEACHBALL && B != (CEntity*)FindPlayerPed())
 		((CObject*)this)->m_nBeachballBounces = 0;
 
 	if(bPedPhysics){
-		normalSpeed = DotProduct(m_vecMoveSpeed, colpoint.normal);
+		normalSpeed = glm::dot(m_vecMoveSpeed, vec3ColpointNormal);
 		if(normalSpeed < 0.0f){
 			impulse = -normalSpeed * m_fMass;
 			ApplyMoveForce(colpoint.normal * impulse);
@@ -951,8 +964,8 @@ CPhysical::ApplyCollisionAlt(CEntity *B, CColPoint &colpoint, float &impulse, CV
 		}
 	}else{
 		CVector pointpos = colpoint.point - GetPosition();
-		speed = GetSpeed(pointpos);
-		normalSpeed = DotProduct(speed, colpoint.normal);
+		speed = toVec3(GetSpeed(pointpos));
+		normalSpeed = glm::dot(speed, vec3ColpointNormal);
 		if(normalSpeed < 0.0f){
 			int16 elasticityType = 0;
 			float mass = GetMass(pointpos, colpoint.normal);
@@ -1000,20 +1013,19 @@ CPhysical::ApplyCollisionAlt(CEntity *B, CColPoint &colpoint, float &impulse, CV
 				impulse = -(m_fElasticity + 1.0f) * normalSpeed * mass;
 
 			// ApplyMoveForce
-			vImpulse = colpoint.normal*impulse;
+			vImpulse = vec3ColpointNormal*impulse;
 			if(IsVehicle()){
-				if(!bHasHitWall ||
-				   !(m_vecMoveSpeed.MagnitudeSqr() > 0.1 || !(B->IsBuilding() || ((CPhysical*)B)->bInfiniteMass)))
-					moveSpeed += vImpulse * 1.2f * (1.0f/m_fMass);
+				if(!bHasHitWall || !(glm::dot(m_vecMoveSpeed, m_vecMoveSpeed) > 0.1 || !(B->IsBuilding() || ((CPhysical *)B)->bInfiniteMass)))
+					moveSpeed += toVec(vImpulse * 1.2f * (1.0f/m_fMass));
 				else
-					moveSpeed += vImpulse * (1.0f/m_fMass);
+					moveSpeed += toVec(vImpulse * (1.0f / m_fMass));
 				vImpulse *= 0.8f;
 			}else
-				moveSpeed += vImpulse * (1.0f/m_fMass);
+				moveSpeed += toVec(vImpulse * (1.0f / m_fMass));
 
 			// ApplyTurnForce
 			CVector com = Multiply3x3(GetMatrix(), m_vecCentreOfMass);
-			CVector turnimpulse = CrossProduct(pointpos-com, vImpulse);
+			CVector turnimpulse = CrossProduct(pointpos - com, toVec(vImpulse));
 			turnSpeed += turnimpulse*(1.0f/m_fTurnMass);
 
 			return true;
@@ -1025,31 +1037,28 @@ CPhysical::ApplyCollisionAlt(CEntity *B, CColPoint &colpoint, float &impulse, CV
 bool
 CPhysical::ApplyFriction(CPhysical *B, float adhesiveLimit, CColPoint &colpoint)
 {
-	CVector speedA, speedB;
+	glm::vec3 speedA, speedB;
 	float normalSpeedA, normalSpeedB;
-	CVector vOtherSpeedA, vOtherSpeedB;
+	glm::vec3 vOtherSpeedA, vOtherSpeedB;
 	float fOtherSpeedA, fOtherSpeedB;
 	float speedSum;
-	CVector frictionDir;
+	glm::vec3 frictionDir;
 	float impulseA, impulseB;
 	float impulseLimit;
 	CPhysical *A = this;
+	glm::vec3 vec3ColPointNormal = toVec3(colpoint.normal);
 
 	if(A->bPedPhysics && B->bPedPhysics){
-		normalSpeedA = DotProduct(A->m_vecMoveSpeed, colpoint.normal);
-		normalSpeedB = DotProduct(B->m_vecMoveSpeed, colpoint.normal);
-		vOtherSpeedA = A->m_vecMoveSpeed - colpoint.normal*normalSpeedA;
-		vOtherSpeedB = B->m_vecMoveSpeed - colpoint.normal*normalSpeedB;
+		normalSpeedA = glm::dot(A->m_vecMoveSpeed, vec3ColPointNormal);
+		normalSpeedB = glm::dot(B->m_vecMoveSpeed, vec3ColPointNormal);
+		vOtherSpeedA = A->m_vecMoveSpeed - vec3ColPointNormal*normalSpeedA;
+		vOtherSpeedB = B->m_vecMoveSpeed - vec3ColPointNormal*normalSpeedB;
 
-		fOtherSpeedA = vOtherSpeedA.Magnitude();
-		fOtherSpeedB = vOtherSpeedB.Magnitude();
+		fOtherSpeedA = glm::length(vOtherSpeedA);
+		fOtherSpeedB = glm::length(vOtherSpeedB);
 
-#ifdef FIX_BUGS // division by 0
 		frictionDir = vOtherSpeedA;
-		frictionDir.Normalise();
-#else
-		frictionDir = vOtherSpeedA * (1.0f/fOtherSpeedA);
-#endif
+		frictionDir = glm::normalize(frictionDir);
 
 		speedSum = (B->m_fMass*fOtherSpeedB + A->m_fMass*fOtherSpeedA)/(B->m_fMass + A->m_fMass);
 		if(fOtherSpeedA > speedSum){
@@ -1057,11 +1066,8 @@ CPhysical::ApplyFriction(CPhysical *B, float adhesiveLimit, CColPoint &colpoint)
 			impulseB = (speedSum - fOtherSpeedB) * B->m_fMass;
 			impulseLimit = adhesiveLimit*CTimer::GetTimeStep();
 			if(impulseA < -impulseLimit) impulseA = -impulseLimit;
-#ifdef FIX_BUGS
 			if(impulseB > impulseLimit) impulseB = impulseLimit;
-#else
-			if(impulseA < -impulseLimit) impulseA = -impulseLimit; // duplicate
-#endif
+
 			A->ApplyFrictionMoveForce(frictionDir*impulseA);
 			B->ApplyFrictionMoveForce(frictionDir*impulseB);
 			return true;
@@ -1070,23 +1076,20 @@ CPhysical::ApplyFriction(CPhysical *B, float adhesiveLimit, CColPoint &colpoint)
 		if(B->IsVehicle())
 			return false;
 		CVector pointposB = colpoint.point - B->GetPosition();
-		speedB = B->GetSpeed(pointposB);
+		speedB = toVec3(B->GetSpeed(pointposB));
 
-		normalSpeedA = DotProduct(A->m_vecMoveSpeed, colpoint.normal);
-		normalSpeedB = DotProduct(speedB, colpoint.normal);
-		vOtherSpeedA = A->m_vecMoveSpeed - colpoint.normal*normalSpeedA;
-		vOtherSpeedB = speedB - colpoint.normal*normalSpeedB;
+		normalSpeedA = glm::dot(A->m_vecMoveSpeed, vec3ColPointNormal);
+		normalSpeedB = glm::dot(speedB, vec3ColPointNormal);
+		vOtherSpeedA = A->m_vecMoveSpeed - vec3ColPointNormal * normalSpeedA;
+		vOtherSpeedB = speedB -  vec3ColPointNormal *normalSpeedB;
 
-		fOtherSpeedA = vOtherSpeedA.Magnitude();
-		fOtherSpeedB = vOtherSpeedB.Magnitude();
+		fOtherSpeedA = glm::length(vOtherSpeedA);
+		fOtherSpeedB = glm::length(vOtherSpeedB);
 
-#ifdef FIX_BUGS // division by 0
 		frictionDir = vOtherSpeedA;
-		frictionDir.Normalise();
-#else
-		frictionDir = vOtherSpeedA * (1.0f/fOtherSpeedA);
-#endif
-		float massB = B->GetMass(pointposB, frictionDir);
+		frictionDir = glm::normalize(frictionDir);
+
+		float massB = B->GetMass(pointposB, toVec(frictionDir));
 		speedSum = (massB*fOtherSpeedB + A->m_fMass*fOtherSpeedA)/(massB + A->m_fMass);
 		if(fOtherSpeedA > speedSum){
 			impulseA = (speedSum - fOtherSpeedA) * A->m_fMass;
@@ -1103,23 +1106,20 @@ CPhysical::ApplyFriction(CPhysical *B, float adhesiveLimit, CColPoint &colpoint)
 		if(A->IsVehicle())
 			return false;
 		CVector pointposA = colpoint.point - A->GetPosition();
-		speedA = A->GetSpeed(pointposA);
+		speedA = toVec3(A->GetSpeed(pointposA));
 
-		normalSpeedA = DotProduct(speedA, colpoint.normal);
-		normalSpeedB = DotProduct(B->m_vecMoveSpeed, colpoint.normal);
-		vOtherSpeedA = speedA - colpoint.normal*normalSpeedA;
-		vOtherSpeedB = B->m_vecMoveSpeed - colpoint.normal*normalSpeedB;
+		normalSpeedA = glm::dot(speedA, vec3ColPointNormal);
+		normalSpeedB = glm::dot(B->m_vecMoveSpeed, vec3ColPointNormal);
+		vOtherSpeedA = speedA - vec3ColPointNormal * normalSpeedA;
+		vOtherSpeedB = B->m_vecMoveSpeed - vec3ColPointNormal * normalSpeedB;
 
-		fOtherSpeedA = vOtherSpeedA.Magnitude();
-		fOtherSpeedB = vOtherSpeedB.Magnitude();
+		fOtherSpeedA = glm::length(vOtherSpeedA);
+		fOtherSpeedB = glm::length(vOtherSpeedB);
 
-#ifdef FIX_BUGS // division by 0
 		frictionDir = vOtherSpeedA;
-		frictionDir.Normalise();
-#else
-		frictionDir = vOtherSpeedA * (1.0f/fOtherSpeedA);
-#endif
-		float massA = A->GetMass(pointposA, frictionDir);
+		frictionDir = glm::normalize(frictionDir);
+
+		float massA = A->GetMass(pointposA, toVec(frictionDir));
 		speedSum = (B->m_fMass*fOtherSpeedB + massA*fOtherSpeedA)/(B->m_fMass + massA);
 		if(fOtherSpeedA > speedSum){
 			impulseA = (speedSum - fOtherSpeedA) * massA;
@@ -1135,25 +1135,22 @@ CPhysical::ApplyFriction(CPhysical *B, float adhesiveLimit, CColPoint &colpoint)
 	}else{
 		CVector pointposA = colpoint.point - A->GetPosition();
 		CVector pointposB = colpoint.point - B->GetPosition();
-		speedA = A->GetSpeed(pointposA);
-		speedB = B->GetSpeed(pointposB);
+		speedA = toVec3(A->GetSpeed(pointposA));
+		speedB = toVec3(B->GetSpeed(pointposB));
 
-		normalSpeedA = DotProduct(speedA, colpoint.normal);
-		normalSpeedB = DotProduct(speedB, colpoint.normal);
-		vOtherSpeedA = speedA - colpoint.normal*normalSpeedA;
-		vOtherSpeedB = speedB - colpoint.normal*normalSpeedB;
+		normalSpeedA = glm::dot(speedA, vec3ColPointNormal);
+		normalSpeedB = glm::dot(speedB, vec3ColPointNormal);
+		vOtherSpeedA = speedA - vec3ColPointNormal*normalSpeedA;
+		vOtherSpeedB = speedB - vec3ColPointNormal*normalSpeedB;
 
-		fOtherSpeedA = vOtherSpeedA.Magnitude();
-		fOtherSpeedB = vOtherSpeedB.Magnitude();
+		fOtherSpeedA = glm::length(vOtherSpeedA);
+		fOtherSpeedB = glm::length(vOtherSpeedB);
 
-#ifdef FIX_BUGS // division by 0
 		frictionDir = vOtherSpeedA;
-		frictionDir.Normalise();
-#else
-		frictionDir = vOtherSpeedA * (1.0f/fOtherSpeedA);
-#endif
-		float massA = A->GetMass(pointposA, frictionDir);
-		float massB = B->GetMass(pointposB, frictionDir);
+		frictionDir = glm::normalize(frictionDir);
+
+		float massA = A->GetMass(pointposA, toVec(frictionDir));
+		float massB = B->GetMass(pointposB, toVec(frictionDir));
 		speedSum = (massB*fOtherSpeedB + massA*fOtherSpeedA)/(massB + massA);
 		if(fOtherSpeedA > speedSum){
 			impulseA = (speedSum - fOtherSpeedA) * massA;
@@ -1174,59 +1171,54 @@ CPhysical::ApplyFriction(CPhysical *B, float adhesiveLimit, CColPoint &colpoint)
 bool
 CPhysical::ApplyFriction(float adhesiveLimit, CColPoint &colpoint)
 {
-	CVector speed;
+	glm::vec3 speed;
 	float normalSpeed;
-	CVector vOtherSpeed;
+	glm::vec3 vOtherSpeed;
 	float fOtherSpeed;
-	CVector frictionDir;
+	glm::vec3 frictionDir;
 	float fImpulse;
 	float impulseLimit;
+	glm::vec3 vec3ColPointNormal = toVec3(colpoint.normal);
 
 	if(bPedPhysics){
-		normalSpeed = DotProduct(m_vecMoveSpeed, colpoint.normal);
-		vOtherSpeed = m_vecMoveSpeed - colpoint.normal*normalSpeed;
+		normalSpeed = glm::dot(m_vecMoveSpeed, vec3ColPointNormal);
+		vOtherSpeed = m_vecMoveSpeed - vec3ColPointNormal * normalSpeed;
 
-		fOtherSpeed = vOtherSpeed.Magnitude();
+		fOtherSpeed = glm::length(vOtherSpeed);
 		if(fOtherSpeed > 0.0f){
-#ifdef FIX_BUGS // division by 0
 			frictionDir = vOtherSpeed;
-			frictionDir.Normalise();
-#else
-			frictionDir = vOtherSpeed * (1.0f/fOtherSpeed);
-#endif
+			frictionDir = glm::normalize(frictionDir);
+
 			// not really impulse but speed
 			// maybe use ApplyFrictionMoveForce instead?
 			fImpulse = -fOtherSpeed;
 			impulseLimit = adhesiveLimit*CTimer::GetTimeStep() / m_fMass;
 			if(fImpulse < -impulseLimit) fImpulse = -impulseLimit;
-			CVector vImpulse = frictionDir*fImpulse;
-			m_vecMoveFriction += CVector(vImpulse.x, vImpulse.y, 0.0f);
+			glm::vec3 vImpulse = frictionDir*fImpulse;
+			m_vecMoveFriction += glm::vec3(vImpulse.x, vImpulse.y, 0.0f);
 			return true;
 		}
 	}else{
-		CVector pointpos = colpoint.point - GetPosition();
+		glm::vec3 pointpos = toVec3(colpoint.point - GetPosition());
 		speed = GetSpeed(pointpos);
-		normalSpeed = DotProduct(speed, colpoint.normal);
-		vOtherSpeed = speed - colpoint.normal*normalSpeed;
+		normalSpeed = glm::dot(speed, vec3ColPointNormal);
+		vOtherSpeed = speed - vec3ColPointNormal * normalSpeed;
 
-		fOtherSpeed = vOtherSpeed.Magnitude();
+		fOtherSpeed = glm::length(vOtherSpeed);
 		if(fOtherSpeed > 0.0f){
-#ifdef FIX_BUGS // division by 0
 			frictionDir = vOtherSpeed;
-			frictionDir.Normalise();
-#else
-			frictionDir = vOtherSpeed * (1.0f/fOtherSpeed);
-#endif
+			frictionDir = glm::normalize(frictionDir);
+
 			fImpulse = -fOtherSpeed * m_fMass;
 			impulseLimit = adhesiveLimit*CTimer::GetTimeStep() * 1.5;
 			if(fImpulse < -impulseLimit) fImpulse = -impulseLimit;
-			ApplyFrictionMoveForce(frictionDir*fImpulse);
-			ApplyFrictionTurnForce(frictionDir*fImpulse, pointpos);
+			ApplyFrictionMoveForce(toVec(frictionDir*fImpulse));
+			ApplyFrictionTurnForce(toVec(frictionDir * fImpulse), toVec(pointpos));
 
 			if(fOtherSpeed > 0.1f &&
 			   colpoint.surfaceB != SURFACE_GRASS && colpoint.surfaceB != SURFACE_MUD_DRY &&
 			   CSurfaceTable::GetAdhesionGroup(colpoint.surfaceA) == ADHESIVE_HARD){
-				CVector v = frictionDir * fOtherSpeed * 0.25f;
+				CVector v = toVec(frictionDir) * fOtherSpeed * 0.25f;
 				for(int i = 0; i < 4; i++)
 					CParticle::AddParticle(PARTICLE_SPARK_SMALL, colpoint.point, v);
 			}
@@ -1463,16 +1455,16 @@ collision:
 			if(impulseB > B->m_fDamageImpulse)
 				B->SetDamagedPieceRecord(aColPoints[i].pieceB, impulseB, A, aColPoints[i].normal);
 
-			float turnSpeedDiff = (B->m_vecTurnSpeed - A->m_vecTurnSpeed).MagnitudeSqr();
-			float moveSpeedDiff = (B->m_vecMoveSpeed - A->m_vecMoveSpeed).MagnitudeSqr();
+			float turnSpeedDiff = glm::dot(B->m_vecTurnSpeed - A->m_vecTurnSpeed, B->m_vecTurnSpeed - A->m_vecTurnSpeed);
+			float moveSpeedDiff = glm::dot(B->m_vecMoveSpeed - A->m_vecMoveSpeed, B->m_vecMoveSpeed - A->m_vecMoveSpeed);
 
 			DMAudio.ReportCollision(A, B, aColPoints[i].surfaceA, aColPoints[i].surfaceB, impulseA, Max(turnSpeedDiff, moveSpeedDiff));
 		}
 	}else if(A->bHasContacted){
-		CVector savedMoveFriction = A->m_vecMoveFriction;
-		CVector savedTurnFriction = A->m_vecTurnFriction;
-		A->m_vecMoveFriction = CVector(0.0f, 0.0f, 0.0f);
-		A->m_vecTurnFriction = CVector(0.0f, 0.0f, 0.0f);
+		glm::vec3 savedMoveFriction = A->m_vecMoveFriction;
+		glm::vec3 savedTurnFriction = A->m_vecTurnFriction;
+		A->m_vecMoveFriction = glm::vec3(0.0f, 0.0f, 0.0f);
+		A->m_vecTurnFriction = glm::vec3(0.0f, 0.0f, 0.0f);
 		A->bHasContacted = false;
 
 		for(i = 0; i < numCollisions; i++){
@@ -1485,8 +1477,8 @@ collision:
 			if(impulseB > B->m_fDamageImpulse)
 				B->SetDamagedPieceRecord(aColPoints[i].pieceB, impulseB, A, aColPoints[i].normal);
 
-			float turnSpeedDiff = (B->m_vecTurnSpeed - A->m_vecTurnSpeed).MagnitudeSqr();
-			float moveSpeedDiff = (B->m_vecMoveSpeed - A->m_vecMoveSpeed).MagnitudeSqr();
+			float turnSpeedDiff = glm::dot(B->m_vecTurnSpeed - A->m_vecTurnSpeed, B->m_vecTurnSpeed - A->m_vecTurnSpeed);
+			float moveSpeedDiff = glm::dot(B->m_vecMoveSpeed - A->m_vecMoveSpeed, B->m_vecMoveSpeed - A->m_vecMoveSpeed);
 
 			DMAudio.ReportCollision(A, B, aColPoints[i].surfaceA, aColPoints[i].surfaceB, impulseA, Max(turnSpeedDiff, moveSpeedDiff));
 
@@ -1502,10 +1494,10 @@ collision:
 			A->m_vecTurnFriction = savedTurnFriction;
 		}
 	}else if(B->bHasContacted){
-		CVector savedMoveFriction = B->m_vecMoveFriction;
-		CVector savedTurnFriction = B->m_vecTurnFriction;
-		B->m_vecMoveFriction = CVector(0.0f, 0.0f, 0.0f);
-		B->m_vecTurnFriction = CVector(0.0f, 0.0f, 0.0f);
+		glm::vec3 savedMoveFriction = B->m_vecMoveFriction;
+		glm::vec3 savedTurnFriction = B->m_vecTurnFriction;
+		B->m_vecMoveFriction = glm::vec3(0.0f, 0.0f, 0.0f);
+		B->m_vecTurnFriction = glm::vec3(0.0f, 0.0f, 0.0f);
 		B->bHasContacted = false;
 
 		for(i = 0; i < numCollisions; i++){
@@ -1518,8 +1510,8 @@ collision:
 			if(impulseB > B->m_fDamageImpulse)
 				B->SetDamagedPieceRecord(aColPoints[i].pieceB, impulseB, A, aColPoints[i].normal);
 
-			float turnSpeedDiff = (B->m_vecTurnSpeed - A->m_vecTurnSpeed).MagnitudeSqr();
-			float moveSpeedDiff = (B->m_vecMoveSpeed - A->m_vecMoveSpeed).MagnitudeSqr();
+			float turnSpeedDiff = glm::dot(B->m_vecTurnSpeed - A->m_vecTurnSpeed, B->m_vecTurnSpeed - A->m_vecTurnSpeed);
+			float moveSpeedDiff = glm::dot(B->m_vecMoveSpeed - A->m_vecMoveSpeed, B->m_vecMoveSpeed - A->m_vecMoveSpeed);
 
 			DMAudio.ReportCollision(A, B, aColPoints[i].surfaceA, aColPoints[i].surfaceB, impulseA, Max(turnSpeedDiff, moveSpeedDiff));
 
@@ -1545,8 +1537,8 @@ collision:
 			if(impulseB > B->m_fDamageImpulse)
 				B->SetDamagedPieceRecord(aColPoints[i].pieceB, impulseB, A, aColPoints[i].normal);
 
-			float turnSpeedDiff = (B->m_vecTurnSpeed - A->m_vecTurnSpeed).MagnitudeSqr();
-			float moveSpeedDiff = (B->m_vecMoveSpeed - A->m_vecMoveSpeed).MagnitudeSqr();
+			float turnSpeedDiff = glm::dot(B->m_vecTurnSpeed - A->m_vecTurnSpeed, B->m_vecTurnSpeed - A->m_vecTurnSpeed);
+			float moveSpeedDiff = glm::dot(B->m_vecMoveSpeed - A->m_vecMoveSpeed, B->m_vecMoveSpeed - A->m_vecMoveSpeed);
 
 			DMAudio.ReportCollision(A, B, aColPoints[i].surfaceA, aColPoints[i].surfaceB, impulseA, Max(turnSpeedDiff, moveSpeedDiff));
 
@@ -1729,8 +1721,8 @@ CPhysical::ProcessCollisionSectorList(CPtrList *lists)
 							if(CSurfaceTable::GetAdhesionGroup(aColPoints[i].surfaceB) == ADHESIVE_SAND)
 								aColPoints[i].surfaceB = SURFACE_SAND;
 
-							float turnSpeedDiff = A->m_vecTurnSpeed.MagnitudeSqr();
-							float moveSpeedDiff = A->m_vecMoveSpeed.MagnitudeSqr();
+							float turnSpeedDiff = glm::dot(A->m_vecTurnSpeed, A->m_vecTurnSpeed);
+							float moveSpeedDiff = glm::dot(A->m_vecMoveSpeed, A->m_vecMoveSpeed);
 
 							if(A->GetUp().z < -0.6f &&
 							   Abs(A->m_vecMoveSpeed.x) < 0.05f &&
@@ -1743,8 +1735,8 @@ CPhysical::ProcessCollisionSectorList(CPtrList *lists)
 							if(impulseA > A->m_fDamageImpulse)
 								A->SetDamagedPieceRecord(aColPoints[i].pieceA, impulseA, B, aColPoints[i].normal);
 
-							float turnSpeedDiff = A->m_vecTurnSpeed.MagnitudeSqr();
-							float moveSpeedDiff = A->m_vecMoveSpeed.MagnitudeSqr();
+							float turnSpeedDiff = glm::dot(A->m_vecTurnSpeed, A->m_vecTurnSpeed);
+							float moveSpeedDiff = glm::dot(A->m_vecMoveSpeed, A->m_vecMoveSpeed);
 
 							DMAudio.ReportCollision(A, B, aColPoints[i].surfaceA, aColPoints[i].surfaceB, impulseA, Max(turnSpeedDiff, moveSpeedDiff));
 						}
@@ -1767,8 +1759,8 @@ CPhysical::ProcessCollisionSectorList(CPtrList *lists)
 							if(CSurfaceTable::GetAdhesionGroup(aColPoints[i].surfaceB) == ADHESIVE_SAND)
 								aColPoints[i].surfaceB = SURFACE_SAND;
 
-							float turnSpeedDiff = A->m_vecTurnSpeed.MagnitudeSqr();
-							float moveSpeedDiff = A->m_vecMoveSpeed.MagnitudeSqr();
+							float turnSpeedDiff = glm::dot(A->m_vecTurnSpeed, A->m_vecTurnSpeed);
+							float moveSpeedDiff = glm::dot(A->m_vecMoveSpeed, A->m_vecMoveSpeed);
 
 							if(A->GetUp().z < -0.6f &&
 							   Abs(A->m_vecMoveSpeed.x) < 0.05f &&
@@ -1797,8 +1789,8 @@ CPhysical::ProcessCollisionSectorList(CPtrList *lists)
 							if(impulseA > A->m_fDamageImpulse)
 								A->SetDamagedPieceRecord(aColPoints[i].pieceA, impulseA, B, aColPoints[i].normal);
 
-							float turnSpeedDiff = A->m_vecTurnSpeed.MagnitudeSqr();
-							float moveSpeedDiff = A->m_vecMoveSpeed.MagnitudeSqr();
+							float turnSpeedDiff = glm::dot(A->m_vecTurnSpeed, A->m_vecTurnSpeed);
+							float moveSpeedDiff = glm::dot(A->m_vecMoveSpeed, A->m_vecMoveSpeed);
 
 							DMAudio.ReportCollision(A, B, aColPoints[i].surfaceA, aColPoints[i].surfaceB, impulseA, Max(turnSpeedDiff, moveSpeedDiff));
 						}
@@ -1809,15 +1801,15 @@ CPhysical::ProcessCollisionSectorList(CPtrList *lists)
 				}
 
 				if(numResponses){
-					m_vecMoveSpeed += moveSpeed / numResponses;
-					m_vecTurnSpeed += turnSpeed / numResponses;
+					m_vecMoveSpeed += toVec3(moveSpeed / numResponses);
+					m_vecTurnSpeed += toVec3(turnSpeed / numResponses);
 					if(!CWorld::bNoMoreCollisionTorque &&
 					   A->GetStatus() == STATUS_PLAYER && A->IsVehicle() &&
 					   Abs(A->m_vecMoveSpeed.x) > 0.2f &&
 					   Abs(A->m_vecMoveSpeed.y) > 0.2f && !A->bIsInWater){
 						A->m_vecMoveFriction.x += moveSpeed.x * -0.3f / numCollisions;
 						A->m_vecMoveFriction.y += moveSpeed.y * -0.3f / numCollisions;
-						A->m_vecTurnFriction += turnSpeed * -0.3f / numCollisions;
+						A->m_vecTurnFriction += toVec3(turnSpeed * -0.3f / numCollisions);
 					}
 
 					if(B->IsObject() && Bobj->m_nCollisionDamageEffect && maxImpulseA > 20.0f)
@@ -1852,16 +1844,16 @@ CPhysical::ProcessCollisionSectorList(CPtrList *lists)
 						if(impulseB > B->m_fDamageImpulse)
 							B->SetDamagedPieceRecord(aColPoints[i].pieceB, impulseB, A, aColPoints[i].normal);
 
-						float turnSpeedDiff = (B->m_vecTurnSpeed - A->m_vecTurnSpeed).MagnitudeSqr();
-						float moveSpeedDiff = (B->m_vecMoveSpeed - A->m_vecMoveSpeed).MagnitudeSqr();
+						float turnSpeedDiff = glm::dot(B->m_vecTurnSpeed - A->m_vecTurnSpeed, B->m_vecTurnSpeed - A->m_vecTurnSpeed);
+						float moveSpeedDiff = glm::dot(B->m_vecMoveSpeed - A->m_vecMoveSpeed, B->m_vecMoveSpeed - A->m_vecMoveSpeed);
 
 						DMAudio.ReportCollision(A, B, aColPoints[i].surfaceA, aColPoints[i].surfaceB, impulseA, Max(turnSpeedDiff, moveSpeedDiff));
 					}
 				}else if(A->bHasContacted){
-					CVector savedMoveFriction = A->m_vecMoveFriction;
-					CVector savedTurnFriction = A->m_vecTurnFriction;
-					A->m_vecMoveFriction = CVector(0.0f, 0.0f, 0.0f);
-					A->m_vecTurnFriction = CVector(0.0f, 0.0f, 0.0f);
+					glm::vec3 savedMoveFriction = A->m_vecMoveFriction;
+					glm::vec3 savedTurnFriction = A->m_vecTurnFriction;
+					A->m_vecMoveFriction = glm::vec3(0.0f, 0.0f, 0.0f);
+					A->m_vecTurnFriction = glm::vec3(0.0f, 0.0f, 0.0f);
 					A->bHasContacted = false;
 
 					for(i = 0; i < numCollisions; i++){
@@ -1877,8 +1869,8 @@ CPhysical::ProcessCollisionSectorList(CPtrList *lists)
 						if(impulseB > B->m_fDamageImpulse)
 							B->SetDamagedPieceRecord(aColPoints[i].pieceB, impulseB, A, aColPoints[i].normal);
 
-						float turnSpeedDiff = (B->m_vecTurnSpeed - A->m_vecTurnSpeed).MagnitudeSqr();
-						float moveSpeedDiff = (B->m_vecMoveSpeed - A->m_vecMoveSpeed).MagnitudeSqr();
+						float turnSpeedDiff = glm::dot(B->m_vecTurnSpeed - A->m_vecTurnSpeed, B->m_vecTurnSpeed - A->m_vecTurnSpeed);
+						float moveSpeedDiff = glm::dot(B->m_vecMoveSpeed - A->m_vecMoveSpeed, B->m_vecMoveSpeed - A->m_vecMoveSpeed);
 
 						DMAudio.ReportCollision(A, B, aColPoints[i].surfaceA, aColPoints[i].surfaceB, impulseA, Max(turnSpeedDiff, moveSpeedDiff));
 
@@ -1894,10 +1886,10 @@ CPhysical::ProcessCollisionSectorList(CPtrList *lists)
 						A->m_vecTurnFriction = savedTurnFriction;
 					}
 				}else if(B->bHasContacted){
-					CVector savedMoveFriction = B->m_vecMoveFriction;
-					CVector savedTurnFriction = B->m_vecTurnFriction;
-					B->m_vecMoveFriction = CVector(0.0f, 0.0f, 0.0f);
-					B->m_vecTurnFriction = CVector(0.0f, 0.0f, 0.0f);
+					glm::vec3 savedMoveFriction = B->m_vecMoveFriction;
+					glm::vec3 savedTurnFriction = B->m_vecTurnFriction;
+					B->m_vecMoveFriction = glm::vec3(0.0f, 0.0f, 0.0f);
+					B->m_vecTurnFriction = glm::vec3(0.0f, 0.0f, 0.0f);
 					B->bHasContacted = false;
 
 					for(i = 0; i < numCollisions; i++){
@@ -1913,8 +1905,8 @@ CPhysical::ProcessCollisionSectorList(CPtrList *lists)
 						if(impulseB > B->m_fDamageImpulse)
 							B->SetDamagedPieceRecord(aColPoints[i].pieceB, impulseB, A, aColPoints[i].normal);
 
-						float turnSpeedDiff = (B->m_vecTurnSpeed - A->m_vecTurnSpeed).MagnitudeSqr();
-						float moveSpeedDiff = (B->m_vecMoveSpeed - A->m_vecMoveSpeed).MagnitudeSqr();
+						float turnSpeedDiff = glm::dot(B->m_vecTurnSpeed - A->m_vecTurnSpeed, B->m_vecTurnSpeed - A->m_vecTurnSpeed);
+						float moveSpeedDiff = glm::dot(B->m_vecMoveSpeed - A->m_vecMoveSpeed, B->m_vecMoveSpeed - A->m_vecMoveSpeed);
 
 						DMAudio.ReportCollision(A, B, aColPoints[i].surfaceA, aColPoints[i].surfaceB, impulseA, Max(turnSpeedDiff, moveSpeedDiff));
 
@@ -1943,8 +1935,8 @@ CPhysical::ProcessCollisionSectorList(CPtrList *lists)
 						if(impulseB > B->m_fDamageImpulse)
 							B->SetDamagedPieceRecord(aColPoints[i].pieceB, impulseB, A, aColPoints[i].normal);
 
-						float turnSpeedDiff = (B->m_vecTurnSpeed - A->m_vecTurnSpeed).MagnitudeSqr();
-						float moveSpeedDiff = (B->m_vecMoveSpeed - A->m_vecMoveSpeed).MagnitudeSqr();
+						float turnSpeedDiff = glm::dot(B->m_vecTurnSpeed - A->m_vecTurnSpeed, B->m_vecTurnSpeed - A->m_vecTurnSpeed);
+						float moveSpeedDiff = glm::dot(B->m_vecMoveSpeed - A->m_vecMoveSpeed, B->m_vecMoveSpeed - A->m_vecMoveSpeed);
 
 						DMAudio.ReportCollision(A, B, aColPoints[i].surfaceA, aColPoints[i].surfaceB, impulseA, Max(turnSpeedDiff, moveSpeedDiff));
 
@@ -1956,7 +1948,7 @@ CPhysical::ProcessCollisionSectorList(CPtrList *lists)
 				}
 
 				if(B->IsPed() && A->IsVehicle() &&
-				   (!Bped->IsPlayer() || B->bHasHitWall && A->m_vecMoveSpeed.MagnitudeSqr() > SQR(0.05f)))
+				   (!Bped->IsPlayer() || B->bHasHitWall && glm::dot(A->m_vecMoveSpeed, A->m_vecMoveSpeed) > SQR(0.05f)))
 					Bped->KillPedWithCar((CVehicle*)A, maxImpulseB);
 				else if(B->GetModelIndex() == MI_TRAIN && A->IsPed() &&
 				  (!Aped->IsPlayer() || A->bHasHitWall))
@@ -2127,12 +2119,12 @@ CPhysical::ProcessCollision(void)
 	// Save current state
 	CMatrix savedMatrix(GetMatrix());
 	float savedElasticity = m_fElasticity;
-	CVector savedMoveSpeed = m_vecMoveSpeed;
+	glm::vec3 savedMoveSpeed = m_vecMoveSpeed;
 	float savedTimeStep = CTimer::GetTimeStep();
 
 	int8 n = 1;	// The number of steps we divide the time step into
 	float step = 0.0f;	// divided time step
-	float distSq = m_vecMoveSpeed.MagnitudeSqr() * sq(CTimer::GetTimeStep());
+	float distSq = glm::dot(m_vecMoveSpeed, m_vecMoveSpeed) * sq(CTimer::GetTimeStep());
 
 	if(IsPed() && (distSq >= sq(0.3f) || ped->IsPlayer())){
 		if(ped->IsPlayer()){
@@ -2153,9 +2145,9 @@ CPhysical::ProcessCollision(void)
 		step = savedTimeStep / n;
 
 		CVector bbox = GetColModel()->boundingBox.GetSize();
-		float relDistX = Abs(DotProduct(m_vecMoveSpeed, GetRight())) * CTimer::GetTimeStep() / bbox.x;
-		float relDistY = Abs(DotProduct(m_vecMoveSpeed, GetForward())) * CTimer::GetTimeStep() / bbox.y;
-		float relDistZ = Abs(DotProduct(m_vecMoveSpeed, GetUp())) * CTimer::GetTimeStep() / bbox.z;
+		float relDistX = Abs(glm::dot(m_vecMoveSpeed, toVec3(GetRight()))) * CTimer::GetTimeStep() / bbox.x;
+		float relDistY = Abs(glm::dot(m_vecMoveSpeed, toVec3(GetForward()))) * CTimer::GetTimeStep() / bbox.y;
+		float relDistZ = Abs(glm::dot(m_vecMoveSpeed, toVec3(GetUp()))) * CTimer::GetTimeStep() / bbox.z;
 		if(Max(relDistX, Max(relDistY, relDistZ)) < 1.0f){
 			// check if we can get away with simplified processing
 
@@ -2270,8 +2262,9 @@ CPhysical::ProcessCollision(void)
 	GetMatrix().Reorthogonalise();
 	m_bIsVehicleBeingShifted = false;
 	bSkipLineCol = false;
-	if(!m_vecMoveSpeed.IsZero() ||
-	   !m_vecTurnSpeed.IsZero() ||
+
+	if(!(m_vecMoveSpeed == glm::vec3(0)) ||
+	   !(m_vecTurnSpeed == glm::vec3(0)) ||
 	   bHitByTrain ||
 	   GetStatus() == STATUS_PLAYER ||
 	   IsVehicle() && ((CVehicle*)this)->bRestingOnPhysical ||

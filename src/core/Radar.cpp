@@ -676,7 +676,7 @@ void CRadar::DrawMap()
 	if (!TheCamera.m_WideScreenOn && CHud::m_Wants_To_Draw_Hud) {
 		CalculateCachedSinCos();
 		if (FindPlayerVehicle()) {
-			float speed = FindPlayerSpeed().Magnitude();
+			float speed = glm::length(FindPlayerSpeed());
 			if (speed < RADAR_MIN_SPEED)
 				m_radarRange = RADAR_MIN_RANGE;
 			else if (speed < RADAR_MAX_SPEED)

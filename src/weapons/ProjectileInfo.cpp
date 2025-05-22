@@ -78,7 +78,7 @@ CProjectileInfo::AddProjectile(CEntity *entity, eWeaponType weapon, CVector pos,
 			if (entity->GetModelIndex() == MI_SPARROW || entity->GetModelIndex() == MI_HUNTER || entity->GetModelIndex() == MI_SENTINEL) {
 				matrix = ped->GetMatrix();
 				matrix.GetPosition() = pos;
-				CVector vecSpeed = ((CPhysical*)entity)->m_vecMoveSpeed;
+				CVector vecSpeed = toVec(((CPhysical*)entity)->m_vecMoveSpeed);
 				vy += Max(0.0f, DotProduct(vecSpeed, entity->GetForward())) + Max(0.0f, DotProduct(vecSpeed, entity->GetUp()));
 			} else {
 				if (ped->IsPlayer()) {
@@ -284,7 +284,7 @@ CProjectileInfo::Update()
 			}
 		}
 		const CVector &projectilePos = ms_apProjectile[i]->GetPosition();
-		CVector nextPos = CTimer::GetTimeStep() * ms_apProjectile[i]->m_vecMoveSpeed + projectilePos;
+		CVector nextPos = toVec(CTimer::GetTimeStep() * ms_apProjectile[i]->m_vecMoveSpeed) + projectilePos;
 
 		if ( nextPos.x <= PROJECTILE_BOUNDARY_MIN_X || nextPos.x >= PROJECTILE_BOUNDARY_MAX_X || nextPos.y <= PROJECTILE_BOUNDARY_MIN_Y || nextPos.y >= PROJECTILE_BOUNDARY_MAX_Y ) {
 			// Not RemoveProjectile, because we don't want no explosion

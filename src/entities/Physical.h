@@ -18,12 +18,12 @@ public:
 	int32 m_audioEntityId;
 	float m_phys_unused1;
 	uint32 m_nLastTimeCollided;
-	CVector m_vecMoveSpeed;		// velocity
-	CVector m_vecTurnSpeed;		// angular velocity
-	CVector m_vecMoveFriction;
-	CVector m_vecTurnFriction;
-	CVector m_vecMoveSpeedAvg;
-	CVector m_vecTurnSpeedAvg;
+	glm::vec3 m_vecMoveSpeed; // velocity
+	glm::vec3 m_vecTurnSpeed; // angular velocity
+	glm::vec3 m_vecMoveFriction;
+	glm::vec3 m_vecTurnFriction;
+	glm::vec3 m_vecMoveSpeedAvg;
+	glm::vec3 m_vecTurnSpeedAvg;
 	float m_fMass;
 	float m_fTurnMass;	// moment of inertia
 	float m_fForceMultiplier;
@@ -89,6 +89,7 @@ public:
 
 	// get speed of point p relative to entity center
 	CVector GetSpeed(const CVector &r);
+	glm::vec3 GetSpeed(const glm::vec3 &r);
 	CVector GetSpeed(void) { return GetSpeed(CVector(0.0f, 0.0f, 0.0f)); }
 	float GetMass(const CVector &pos, const CVector &dir) {
 		return 1.0f / (CrossProduct(pos, dir).MagnitudeSqr()/m_fTurnMass +
@@ -108,14 +109,14 @@ public:
 		bIsInSafePosition = false;	
 	}
 
-	const CVector &GetMoveSpeed() { return m_vecMoveSpeed; }
+	const CVector &GetMoveSpeed() { return toVec(m_vecMoveSpeed); }
 	void SetMoveSpeed(float x, float y, float z) {
 		m_vecMoveSpeed.x = x;
 		m_vecMoveSpeed.y = y;
 		m_vecMoveSpeed.z = z;
 	}
 	void SetMoveSpeed(const CVector& speed) {
-		m_vecMoveSpeed = speed;
+		m_vecMoveSpeed = toVec3(speed);
 	}
 	void AddToMoveSpeed(float x, float y, float z) {
 		m_vecMoveSpeed.x += x;
@@ -123,12 +124,12 @@ public:
 		m_vecMoveSpeed.z += z;
 	}
 	void AddToMoveSpeed(const CVector& addition) {
-		m_vecMoveSpeed += addition;
+		m_vecMoveSpeed += toVec3(addition);
 	}
 	void AddToMoveSpeed(const CVector2D& addition) {
-		m_vecMoveSpeed += CVector(addition.x, addition.y, 0.0f);
+		m_vecMoveSpeed += toVec3(CVector(addition.x, addition.y, 0.0f));
 	}
-	const CVector &GetTurnSpeed() { return m_vecTurnSpeed; }
+	const CVector &GetTurnSpeed() { return toVec(m_vecTurnSpeed); }
 	void SetTurnSpeed(float x, float y, float z) {
 		m_vecTurnSpeed.x = x;
 		m_vecTurnSpeed.y = y;
@@ -146,14 +147,19 @@ public:
 	// Force actually means Impulse here
 	void ApplyMoveForce(float jx, float jy, float jz);
 	void ApplyMoveForce(const CVector &j) { ApplyMoveForce(j.x, j.y, j.z); }
+	void ApplyMoveForce(const glm::vec3 &j) { ApplyMoveForce(j.x, j.y, j.z); }
 	// j(x,y,z) is direction of force, p(x,y,z) is point relative to model center where force is applied
 	void ApplyTurnForce(float jx, float jy, float jz, float px, float py, float pz);
 	// j is direction of force, p is point relative to model center where force is applied
 	void ApplyTurnForce(const CVector &j, const CVector &p) { ApplyTurnForce(j.x, j.y, j.z, p.x, p.y, p.z); }
+	void ApplyTurnForce(const glm::vec3 &j, const CVector &p) { ApplyTurnForce(j.x, j.y, j.z, p.x, p.y, p.z); }
 	void ApplyFrictionMoveForce(float jx, float jy, float jz);
 	void ApplyFrictionMoveForce(const CVector &j) { ApplyFrictionMoveForce(j.x, j.y, j.z); }
+	void ApplyFrictionMoveForce(const glm::vec3 &j) { ApplyFrictionMoveForce(j.x, j.y, j.z); }
 	void ApplyFrictionTurnForce(float jx, float jy, float jz, float rx, float ry, float rz);
 	void ApplyFrictionTurnForce(const CVector &j, const CVector &p) { ApplyFrictionTurnForce(j.x, j.y, j.z, p.x, p.y, p.z); }
+	void ApplyFrictionTurnForce(const glm::vec3 &j, const CVector &p) { ApplyFrictionTurnForce(j.x, j.y, j.z, p.x, p.y, p.z); }
+	void ApplyFrictionTurnForce(const glm::vec3 &j, const glm::vec3 &p) { ApplyFrictionTurnForce(j.x, j.y, j.z, p.x, p.y, p.z); }
 	// springRatio: 1.0 fully extended, 0.0 fully compressed
 	bool ApplySpringCollision(float springConst, CVector &springDir, CVector &point, float springRatio, float bias);
 	bool ApplySpringCollisionAlt(float springConst, CVector &springDir, CVector &point, float springRatio, float bias, CVector &forceDir);

@@ -901,7 +901,8 @@ CPed::ProcessObjective(void)
 						break;
 					}
 					if (InVehicle()) {
-						if (distWithTarget.Magnitude() >= 20.0f || m_pMyVehicle->m_vecMoveSpeed.MagnitudeSqr() >= sq(0.02f)) {
+					        if(distWithTarget.Magnitude() >= 20.0f || glm::dot(m_pMyVehicle->m_vecMoveSpeed, m_vecMoveSpeed) >= sq(0.02f))
+						        {
 
 							if (((m_pMyVehicle->pDriver == this && m_pMyVehicle->AutoPilot.m_nCarMission == MISSION_NONE) || m_pMyVehicle->AutoPilot.m_nCarMission == MISSION_CRUISE)
 								&& !m_pMyVehicle->m_nGettingInFlags) {
@@ -1515,7 +1516,7 @@ CPed::ProcessObjective(void)
 					for(int i = 0; i < lastVehicle; i++) {
 						CVehicle *nearVeh = (CVehicle*)vehicles[i];
 						if (m_objective == OBJECTIVE_STEAL_ANY_MISSION_CAR || nearVeh->VehicleCreatedBy != MISSION_VEHICLE) {
-							if (nearVeh->m_vecMoveSpeed.Magnitude() <= 0.1f) {
+							if (glm::length(nearVeh->m_vecMoveSpeed) <= 0.1f) {
 								if (nearVeh->CanPedOpenLocks(this)) {
 									CVector vehDistVec = GetPosition() - nearVeh->GetPosition();
 									float vehDist = vehDistVec.Magnitude();
@@ -1853,8 +1854,8 @@ CPed::ProcessObjective(void)
 
 						if (m_nPedState != PED_EXIT_CAR && m_nPedState != PED_DRAG_FROM_CAR && m_nPedState != PED_EXIT_TRAIN
 							&& (m_nPedType != PEDTYPE_COP
-								|| m_pMyVehicle->IsBoat()
-								|| m_pMyVehicle->m_vecMoveSpeed.MagnitudeSqr2D() < sq(0.005f))) {
+								|| m_pMyVehicle->IsBoat() ||
+					            glm::dot(glm::vec2(m_pMyVehicle->m_vecMoveSpeed), glm::vec2(m_pMyVehicle->m_vecMoveSpeed)) < sq(0.005f))) {
 #ifdef GTA_TRAIN
 							if (m_pMyVehicle->IsTrain())
 								SetExitTrain(m_pMyVehicle);
@@ -2387,7 +2388,8 @@ CPed::PedAnimAlignCB(CAnimBlendAssociation *animAssoc, void *arg)
 		} else {
 			if (enterDoor == DOOR_FRONT_LEFT || enterDoor == DOOR_FRONT_RIGHT) {
 				if (veh->pDriver) {
-					if (veh->m_vecMoveSpeed.Magnitude() > 0.2f) {
+					if(glm::length(veh->m_vecMoveSpeed) > 0.2f)
+						{
 						ped->QuitEnteringCar();
 						ped->SetFall(1000, ped->m_vehDoor == CAR_DOOR_LF || ped->m_vehDoor == CAR_DOOR_LR ? ANIM_STD_HIGHIMPACT_RIGHT : ANIM_STD_HIGHIMPACT_LEFT, false);
 						return;
@@ -2408,7 +2410,8 @@ CPed::PedAnimAlignCB(CAnimBlendAssociation *animAssoc, void *arg)
 				}
 			} else {
 				if (veh->pPassengers[0]) {
-					if (veh->m_vecMoveSpeed.Magnitude() > 0.2f) {
+					if(glm::length(veh->m_vecMoveSpeed) > 0.2f)
+						{
 						ped->QuitEnteringCar();
 						ped->SetFall(1000, ped->m_vehDoor == CAR_DOOR_LF || ped->m_vehDoor == CAR_DOOR_LR ? ANIM_STD_HIGHIMPACT_RIGHT : ANIM_STD_HIGHIMPACT_LEFT, false);
 						return;
@@ -2615,7 +2618,7 @@ CPed::PedAnimDoorOpenCB(CAnimBlendAssociation* animAssoc, void* arg)
 		((CAutomobile*)veh)->Damage.SetDoorStatus(door, DOOR_STATUS_SWINGING);
 	}
 
-	if (veh->m_vecMoveSpeed.Magnitude() > 0.2f ||
+	if (glm::length(veh->m_vecMoveSpeed) > 0.2f ||
 		veh->IsCar() && veh->GetVehicleAppearance() == VEHICLE_APPEARANCE_HELI && ((CAutomobile*)veh)->m_nWheelsOnGround == 0) {
 		ped->QuitEnteringCar();
 		if (ped->m_vehDoor != CAR_DOOR_LF && ped->m_vehDoor != CAR_DOOR_LR)
@@ -3182,8 +3185,8 @@ CPed::PedAnimStepOutCarCB(CAnimBlendAssociation* animAssoc, void* arg)
 	}
 
 	veh->m_nStaticFrames = 0;
-	veh->m_vecMoveSpeed += CVector(0.001f, 0.001f, 0.001f);
-	veh->m_vecTurnSpeed += CVector(0.001f, 0.001f, 0.001f);
+	veh->m_vecMoveSpeed += glm::vec3(0.001f, 0.001f, 0.001f);
+	veh->m_vecTurnSpeed += glm::vec3(0.001f, 0.001f, 0.001f);
 	if (!veh->bIsBus)
 		veh->ProcessOpenDoor(ped->m_vehDoor, ANIM_STD_GETOUT_LHS, 1.0f);
 
@@ -3355,8 +3358,7 @@ CPed::LineUpPedWithCar(PedLineUpPhase phase)
 		}
 		return;
 	}
-	if (phase == LINE_UP_TO_CAR_START) {
-		m_vecMoveSpeed = CVector(0.0f, 0.0f, 0.0f);
+	if (phase == LINE_UP_TO_CAR_START) { m_vecMoveSpeed = glm::vec3(0.0f, 0.0f, 0.0f);
 	}
 	CVehicle *veh = m_pMyVehicle;
 
@@ -3522,7 +3524,7 @@ CPed::LineUpPedWithCar(PedLineUpPhase phase)
 				neededPos.z = GetPosition().z;
 			} else {
 				neededPos.z = autoZPos.z;
-				m_vecMoveSpeed = CVector(0.0f, 0.0f, 0.0f);
+				m_vecMoveSpeed = glm::vec3(0.0f, 0.0f, 0.0f);
 			}
 		}
 	}
@@ -3549,7 +3551,7 @@ CPed::LineUpPedWithCar(PedLineUpPhase phase)
 			currentZ = GetPosition().z;
 			if (m_pVehicleAnim && vehAnim != ANIM_STD_VAN_GET_IN_REAR_LHS && vehAnim != ANIM_STD_VAN_CLOSE_DOOR_REAR_LHS && vehAnim != ANIM_STD_VAN_CLOSE_DOOR_REAR_RHS && vehAnim != ANIM_STD_VAN_GET_IN_REAR_RHS) {
 				neededPos.z = autoZPos.z;
-				m_vecMoveSpeed = CVector(0.0f, 0.0f, 0.0f);
+				m_vecMoveSpeed = glm::vec3(0.0f, 0.0f, 0.0f);
 			} else if (neededPos.z < currentZ && m_pVehicleAnim && vehAnim != ANIM_STD_VAN_CLOSE_DOOR_REAR_LHS && vehAnim != ANIM_STD_VAN_CLOSE_DOOR_REAR_RHS) {
 				adjustedTimeStep = Max(m_pVehicleAnim->timeStep, 0.1f);
 
@@ -3760,7 +3762,7 @@ CPed::SetBeingDraggedFromCar(CVehicle *veh, uint32 vehEnterType, bool quickJack)
 		return;
 
 	bUsesCollision = false;
-	m_vecMoveSpeed = CVector(0.0f, 0.0f, 0.0f);
+	m_vecMoveSpeed = glm::vec3(0.0f, 0.0f, 0.0f);
 	m_nLastPedState = PED_IDLE;
 	SetMoveState(PEDMOVE_STILL);
 	m_pSeekTarget = veh;
@@ -3851,7 +3853,7 @@ CPed::BeingDraggedFromCar(void)
 		LineUpPedWithCar(LINE_UP_TO_CAR_FALL);
 
 	} else if (m_pVehicleAnim->currentTime <= 1.4f) {
-		m_vecMoveSpeed = CVector(0.0f, 0.0f, 0.0f);
+		m_vecMoveSpeed = glm::vec3(0.0f, 0.0f, 0.0f);
 		LineUpPedWithCar(LINE_UP_TO_CAR_START);
 
 	} else {
@@ -4174,8 +4176,8 @@ CPed::SetExitCar(CVehicle *veh, uint32 wantedDoorNode)
 	if (m_nPedState == PED_EXIT_CAR || m_nPedState == PED_DRAG_FROM_CAR)
 		return;
 
-	m_vecMoveSpeed = CVector(0.0f, 0.0f, 0.0f);
-	m_vecTurnSpeed = CVector(0.0f, 0.0f, 0.0f);
+	m_vecMoveSpeed = glm::vec3(0.0f, 0.0f, 0.0f);
+	m_vecTurnSpeed = glm::vec3(0.0f, 0.0f, 0.0f);
 	if (wantedDoorNode == 0) {
 		optedDoorNode = CAR_DOOR_LF;
 		if (veh->IsBike()) {
@@ -5046,7 +5048,7 @@ CPed::PedSetQuickDraggedOutCarPositionCB(CAnimBlendAssociation *animAssoc, void 
 
 	finalPos = Multiply3x3(pedMat, draggedOutOffset) + ped->GetPosition();
 	CPedPlacement::FindZCoorForPed(&finalPos);
-	ped->m_vecMoveSpeed = CVector(0.0f, 0.0f, 0.0f);
+	ped->m_vecMoveSpeed = glm::vec3(0.0f, 0.0f, 0.0f);
 	ped->SetPosition(finalPos);
 
 	if (veh) {
@@ -5150,7 +5152,7 @@ CPed::PedSetDraggedOutCarPositionCB(CAnimBlendAssociation* animAssoc, void* arg)
 	CVector posAfterBeingDragged = Multiply3x3(pedMat, draggedOutOffset);
 	posAfterBeingDragged += ped->GetPosition();
 	CPedPlacement::FindZCoorForPed(&posAfterBeingDragged);
-	ped->m_vecMoveSpeed = CVector(0.0f, 0.0f, 0.0f);
+	ped->m_vecMoveSpeed = glm::vec3(0.0f, 0.0f, 0.0f);
 	ped->SetPosition(posAfterBeingDragged);
 
 	if (ped->m_pMyVehicle && !ped->m_pMyVehicle->IsBike() && !ped->m_pMyVehicle->IsRoomForPedToLeaveCar(ped->m_vehDoor, &draggedOutOffset)) {
@@ -5348,7 +5350,7 @@ CPed::LineUpPedWithTrain(void)
 	CVehicleModelInfo *trainModel = (CVehicleModelInfo *)CModelInfo::GetModelInfo(m_pMyVehicle->GetModelIndex());
 	CVector enterOffset(1.5f, 0.0f, -0.2f);
 
-	m_vecMoveSpeed = CVector(0.0f, 0.0f, 0.0f);
+	m_vecMoveSpeed = glm::vec3(0.0f, 0.0f, 0.0f);
 	m_fRotationCur = m_pMyVehicle->GetForward().Heading() - HALFPI;
 	m_fRotationDest = m_fRotationCur;
 
@@ -5428,7 +5430,7 @@ CPed::PedSetOutTrainCB(CAnimBlendAssociation *animAssoc, void *arg)
 	CVector posAfterExit = Multiply3x3(pedMat, vecPedTrainDoorAnimOffset);
 	posAfterExit += ped->GetPosition();
 	CPedPlacement::FindZCoorForPed(&posAfterExit);
-	ped->m_vecMoveSpeed = CVector(0.0f, 0.0f, 0.0f);
+	ped->m_vecMoveSpeed = glm::vec3(0.0f, 0.0f, 0.0f);
 	ped->SetPosition(posAfterExit);
 	ped->SetHeading(ped->m_fRotationCur);
 	veh->RemovePassenger(ped);
@@ -5657,7 +5659,7 @@ CPed::DuckAndCover(void)
 
 		for (int i = 0; i < lastVehicle; i++) {
 			CVehicle *veh = (CVehicle*) vehicles[i];
-			if (veh->IsCar() && veh->m_vecMoveSpeed.Magnitude() <= 0.02f
+			if(veh->IsCar() && glm::length(veh->m_vecMoveSpeed) <= 0.02f
 				&& !veh->bIsBus && !veh->bIsVan && !veh->bIsBig
 				&& veh->m_numPedsUseItAsCover < 3) {
 
@@ -6172,7 +6174,7 @@ CPed::PositionPedOutOfCollision(void)
 	CWorld::pIgnoreEntity = veh;
 	bUsesCollision = false;
 	bJustCheckCollision = true;
-	m_vecMoveSpeed = CVector(0.f, 0.f, 0.f);
+	m_vecMoveSpeed = glm::vec3(0.f, 0.f, 0.f);
 	if (veh->IsOnItsSide()) {
 		// Top of the veh.
 		newPos = vehPos;
@@ -6272,10 +6274,10 @@ CPed::PositionPedOutOfCollision(void)
 			}
 		}
 	}
-	m_vecMoveSpeed = CVector(0.f, 0.f, 0.f);
-	m_vecTurnSpeed = CVector(0.f, 0.f, 0.f);
-	veh->m_vecMoveSpeed = CVector(0.f, 0.f, 0.f);
-	veh->m_vecTurnSpeed = CVector(0.f, 0.f, 0.f);
+	m_vecMoveSpeed = glm::vec3(0.f, 0.f, 0.f);
+	m_vecTurnSpeed = glm::vec3(0.f, 0.f, 0.f);
+	veh->m_vecMoveSpeed = glm::vec3(0.f, 0.f, 0.f);
+	veh->m_vecTurnSpeed = glm::vec3(0.f, 0.f, 0.f);
 	CWorld::pIgnoreEntity = nil;
 	bUsesCollision = true;
 	bJustCheckCollision = false;
@@ -6488,7 +6490,7 @@ CPed::KillCharOnFootArmed(CVector &ourPos, CVector &targetPos, CVector &distWith
 					SetWeaponLockOnTarget(vehOfTarget);
 					SetShootTimer(CGeneral::GetRandomNumberInRange(500, 2000));
 					
-					CVector2D dirVehGoing = vehOfTarget->m_vecMoveSpeed;
+					CVector2D dirVehGoing = toVec(vehOfTarget->m_vecMoveSpeed);
 					if (dirVehGoing.Magnitude() > 0.2f) {
 						CVector2D vehDist = GetPosition() - vehOfTarget->GetPosition();
 						vehDist.Normalise();

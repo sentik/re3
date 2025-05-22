@@ -829,12 +829,12 @@ void CReplay::ProcessCarUpdate(CVehicle *vehicle, float interpolation, CAddressI
 	vehicle->GetMatrix() = vehicle->GetMatrix() * CMatrix(1.0f - interpolation);
 	vehicle->GetMatrix().GetPosition() *= (1.0f - interpolation);
 	vehicle->GetMatrix() += CMatrix(interpolation) * vehicle_matrix;
-	vehicle->m_vecTurnSpeed = CVector(0.0f, 0.0f, 0.0f);
+	vehicle->m_vecTurnSpeed = glm::vec3(0.0f, 0.0f, 0.0f);
 	vehicle->m_fHealth = 4 * vp->health;
 	vehicle->m_fGasPedal = vp->acceleration / 100.0f;
 	if (vehicle->IsCar())
 		ApplyPanelDamageToCar(vp->panels, (CAutomobile*)vehicle, true);
-	vehicle->m_vecMoveSpeed = CVector(vp->velocityX / 8000.0f, vp->velocityY / 8000.0f, vp->velocityZ / 8000.0f);
+	vehicle->m_vecMoveSpeed = glm::vec3(vp->velocityX / 8000.0f, vp->velocityY / 8000.0f, vp->velocityZ / 8000.0f);
 	if (vehicle->GetModelIndex() == MI_RHINO) {
 		((CAutomobile*)vehicle)->m_fCarGunLR = vp->car_gun * PI / 128.0f;
 		vehicle->m_fSteerAngle = 0.0f;
@@ -903,10 +903,10 @@ void CReplay::ProcessBikeUpdate(CVehicle* vehicle, float interpolation, CAddress
 	vehicle->GetMatrix() = vehicle->GetMatrix() * CMatrix(1.0f - interpolation);
 	vehicle->GetMatrix().GetPosition() *= (1.0f - interpolation);
 	vehicle->GetMatrix() += CMatrix(interpolation) * vehicle_matrix;
-	vehicle->m_vecTurnSpeed = CVector(0.0f, 0.0f, 0.0f);
+	vehicle->m_vecTurnSpeed = glm::vec3(0.0f, 0.0f, 0.0f);
 	vehicle->m_fHealth = 4 * vp->health;
 	vehicle->m_fGasPedal = vp->acceleration / 100.0f;
-	vehicle->m_vecMoveSpeed = CVector(vp->velocityX / 8000.0f, vp->velocityY / 8000.0f, vp->velocityZ / 8000.0f);
+	vehicle->m_vecMoveSpeed = glm::vec3(vp->velocityX / 8000.0f, vp->velocityY / 8000.0f, vp->velocityZ / 8000.0f);
 	vehicle->m_fSteerAngle = vp->wheel_state / 50.0f;
 	vehicle->bEngineOn = true;
 #ifdef FIX_BUGS

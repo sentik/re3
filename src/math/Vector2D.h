@@ -71,6 +71,12 @@ CrossProduct2D(const CVector2D &v1, const CVector2D &v2)
 }
 
 inline float
+CrossProduct2D(const glm::vec2 &v1, const glm::vec2 &v2)
+{
+	return v1.x*v2.y - v1.y*v2.x;
+}
+
+inline float
 Distance2D(const CVector2D &v, float x, float y)
 {
 	return Sqrt((v.x-x)*(v.x-x) + (v.y-y)*(v.y-y));

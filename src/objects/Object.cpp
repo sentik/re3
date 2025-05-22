@@ -142,39 +142,39 @@ CObject::ProcessControl(void)
 		bIsVisible = false;
 		bUsesCollision = false;
 		bAffectedByGravity = false;
-		m_vecMoveSpeed = CVector(0.0f, 0.0f, 0.0f);
+		m_vecMoveSpeed = glm::vec3(0.0f, 0.0f, 0.0f);
 	}
 	if (mi == MI_RCBOMB) {
 		float fTurnForce = -(m_fTurnMass / 20.0f);
 		CPhysical::ApplyTurnForce(m_vecMoveSpeed * fTurnForce, -GetForward());
-		float fScalar = 1.0f - m_vecMoveSpeed.MagnitudeSqr() / 5.0f;
+		float fScalar = 1.0f - glm::dot(m_vecMoveSpeed, m_vecMoveSpeed) / 5.0f;
 		float fScalarTimed = Pow(fScalar, CTimer::GetTimeStep());
 		m_vecMoveSpeed *= fScalarTimed;
 	}
 	if (mi == MI_BEACHBALL) {
 		float fTimeStep = Pow(0.95f, CTimer::GetTimeStep());
-		float fPreviousVecSpeedMag = m_vecMoveSpeed.Magnitude2D();
+		float fPreviousVecSpeedMag = glm::length(glm::vec2(m_vecMoveSpeed));
 		m_vecMoveSpeed.x *= fTimeStep;
 		m_vecMoveSpeed.y *= fTimeStep;
-		m_vecMoveSpeed.z += fPreviousVecSpeedMag - m_vecMoveSpeed.Magnitude2D();
+		m_vecMoveSpeed.z += fPreviousVecSpeedMag -  glm::length(glm::vec2(m_vecMoveSpeed));
 		if (!FindPlayerVehicle()) {
 			CVector distance;
 			distance.x = FindPlayerCoors().x - GetPosition().x;
 			distance.y = FindPlayerCoors().y - GetPosition().y;
 			distance.z = FindPlayerCoors().z - GetPosition().z;
 			if (distance.z > 0.0 && distance.z < 1.5f && distance.Magnitude2D() < 1.0f) {
-				CVector playerSpeed = FindPlayerSpeed();
-				if (fPreviousVecSpeedMag < 0.05f && playerSpeed.Magnitude() > 0.1f) {
+				glm::vec3 playerSpeed = FindPlayerSpeed();
+				if (fPreviousVecSpeedMag < 0.05f && glm::length(playerSpeed) > 0.1f) {
 					playerSpeed.z = 0.0f;
-					playerSpeed.Normalise();
+					playerSpeed = glm::normalize(playerSpeed);
 					playerSpeed.z = 0.3f;
-					m_vecMoveSpeed = CVector(
+					m_vecMoveSpeed = glm::vec3(
 						playerSpeed.x * BEACHBALL_SPEED_PROPORTION,
 						playerSpeed.y * BEACHBALL_SPEED_PROPORTION,
 						0.3f          * BEACHBALL_SPEED_PROPORTION
 					);
 					PlayOneShotScriptObject(SCRIPT_SOUND_HIT_BALL, GetPosition());
-					m_vecTurnSpeed += CVector(
+					m_vecTurnSpeed += glm::vec3(
 						((CGeneral::GetRandomNumber() % 16) - 7) / 10.0f,
 						((CGeneral::GetRandomNumber() % 16) - 7) / 10.0f,
 						0.0f);

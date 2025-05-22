@@ -342,7 +342,7 @@ void CCarAI::UpdateCarAI(CVehicle* pVehicle)
 		{
 			CVector2D diff = (CVector2D)FindPlayerCoors() - pVehicle->GetPosition();
 			float distance = Max(0.001f, diff.Magnitude());
-			if (!FindPlayerVehicle() || DotProduct2D(CVector2D(diff.x / distance, diff.y / distance), FindPlayerSpeed()) > 0.05f)
+			if (!FindPlayerVehicle() || glm::dot(glm::vec2(diff.x / distance, diff.y / distance), glm::vec2(FindPlayerSpeed())) > 0.05f)
 				pVehicle->AutoPilot.m_nCarMission = MISSION_BLOCKPLAYER_CLOSE;
 			BackToCruisingIfNoWantedLevel(pVehicle);
 			break;
@@ -442,12 +442,12 @@ void CCarAI::UpdateCarAI(CVehicle* pVehicle)
 		case MISSION_RAMPLAYER_CLOSE:
 		case MISSION_BLOCKPLAYER_FARAWAY:
 		case MISSION_BLOCKPLAYER_CLOSE:
-			if (FindPlayerVehicle() && FindPlayerSpeed().Magnitude() > pVehicle->GetMoveSpeed().Magnitude()){
-				if (FindPlayerSpeed().Magnitude() > 0.1f){
+			if (FindPlayerVehicle() && glm::length(FindPlayerSpeed()) > pVehicle->GetMoveSpeed().Magnitude()){
+				if(glm::length(FindPlayerSpeed()) > 0.1f) {
 					if (DotProduct2D(FindPlayerVehicle()->GetForward(), pVehicle->GetForward()) > 0.0f){
 						CVector2D dist = pVehicle->GetPosition() - FindPlayerCoors();
-						CVector2D speed = FindPlayerSpeed();
-						if (0.5f * dist.Magnitude() * speed.Magnitude() < DotProduct2D(dist, speed)){
+						glm::vec2 speed = FindPlayerSpeed();
+						if(0.5f * dist.Magnitude() * glm::length(speed) < DotProduct2D(dist, CVector2D(speed.x, speed.y))) {
 							if ((FindPlayerCoors() - pVehicle->GetPosition()).Magnitude() > 12.0f){
 								pVehicle->AutoPilot.m_nTempAction = TEMPACT_WAIT;
 								pVehicle->AutoPilot.m_nTimeTempAction = CTimer::GetTimeInMilliseconds() + 500;

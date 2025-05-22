@@ -22,3 +22,4 @@ inline float Ceil(float x) { return ceilf(x); }
 
 glm::mat4
 CreateScaleMatrix(float s);
+
